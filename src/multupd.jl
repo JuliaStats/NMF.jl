@@ -100,3 +100,76 @@ function update_wh!(upd::NMFMultUpdMSE, s::NMFMultUpdMSE_State,
     A_mul_B!(WH, W, H)
 end
 
+
+# the multiplicative updating algorithm for divergence objective
+
+immutable NMFMultUpdDiv <: NMFUpdater 
+    lambda::Float64
+end
+
+immutable NMFMultUpdDiv_State
+    WH::Matrix{Float64}     
+    sW::Matrix{Float64}     # sum(W, 1)
+    sH::Matrix{Float64}     # sum(H, 2)
+    Q::Matrix{Float64}      # X ./ (WH + lambda): size (p, n)
+    WtQ::Matrix{Float64}    # W' * Q: size (k, n)
+    QHt::Matrix{Float64}    # Q * H': size (p, k)
+
+    function NMFMultUpdDiv_State(X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64})
+        p, n, k = nmf_checksize(X, W, H)
+        new(W * H, 
+            Array(Float64, 1, k),
+            Array(Float64, k, 1),
+            Array(Float64, p, n), 
+            Array(Float64, k, n), 
+            Array(Float64, p, k))
+    end
+end
+
+prepare_state(::NMFMultUpdDiv, X, W, H) = NMFMultUpdDiv_State(X, W, H)
+evaluate_objv(::NMFMultUpdDiv, s::NMFMultUpdDiv_State, X, W, H) = gkldiv(X, s.WH)
+
+function update_wh!(upd::NMFMultUpdDiv, s::NMFMultUpdDiv_State, 
+                    X::Matrix{Float64}, 
+                    W::Matrix{Float64}, 
+                    H::Matrix{Float64})
+
+    p = size(X, 1)
+    n = size(X, 2)
+    k = size(W, 2)
+    pn = p * n
+
+    # fields
+    lambda::Float64 = upd.lambda
+    sW::Matrix{Float64} = s.sW
+    sH::Matrix{Float64} = s.sH
+    WH::Matrix{Float64} = s.WH
+    Q::Matrix{Float64} = s.Q
+    WtQ::Matrix{Float64} = s.WtQ
+    QHt::Matrix{Float64} = s.QHt
+
+    @assert size(Q) == size(X)
+
+    # update H
+    for i = 1:length(X)
+        Q[i] = X[i] / (WH[i] + lambda)
+    end
+    At_mul_B!(WtQ, W, Q)
+    sum!(fill!(sW, 0.0), W)
+    for j = 1:n, i = 1:k
+        H[i,j] *= (WtQ[i,j] / sW[i])
+    end
+    A_mul_B!(WH, W, H)
+
+    # update W
+    for i = 1:length(X)
+        Q[i] = X[i] / (WH[i] + lambda)
+    end
+    A_mul_Bt!(QHt, Q, H)
+    sum!(fill!(sH, 0.0), H)
+    for j = 1:k, i = 1:p
+        W[i,j] *= (QHt[i,j] / sH[j])
+    end
+    A_mul_B!(WH, W, H)
+end
+
