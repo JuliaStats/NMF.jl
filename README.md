@@ -9,7 +9,7 @@ A Julia package for non-negative matrix factorization (NMF).
 #### Done
 
 - Lee & Seung's Multiplicative Update (for both MSE & Divergence objectives)
-- Alternate Least Square (ALS) 
+- Projected Alternate Least Square (Projected ALS) 
 - Random Initialization
 
 #### To do
@@ -89,16 +89,16 @@ end
     **Note:** the values above are default values for the keyword arguments. One can override part (or all) of them.
 
 
-- **Naive Alternate Least Square**
+- **Projected Alternate Least Square**
 
     This algorithm alternately updates ``W`` and ``H`` while holding the other fixed. Each update step solves ``W`` or ``H`` without enforcing the non-negativity constrait, and forces all negative entries to zeros afterwards. Only ``W`` needs to be initialized. 
 
     ```julia
-    NaiveALS(maxiter::Integer=100,    # maximum number of iterations
-             verbose::Bool=false,     # whether to show procedural information
-             tol::Real=1.0e-6,        # tolerance of changes on W and H upon convergence
-             lambda_w::Real=1.0e-6,   # L2 regularization coefficient for W
-             lambda_h::Real=1.0e-6)   # L2 regularization coefficient for H
+    ProjectedALS(maxiter::Integer=100,    # maximum number of iterations
+                 verbose::Bool=false,     # whether to show procedural information
+                 tol::Real=1.0e-6,        # tolerance of changes on W and H upon convergence
+                 lambda_w::Real=1.0e-6,   # L2 regularization coefficient for W
+                 lambda_h::Real=1.0e-6)   # L2 regularization coefficient for H
     ```
 
 ## Examples
@@ -130,6 +130,6 @@ import NMF
 W, H = NMF.randinit(X, 5)
 
  # optimize 
-NMF.solve!(NMF.NaiveALS(maxiter=50), X, W, H)
+NMF.solve!(NMF.ProjectedALS(maxiter=50), X, W, H)
 ```
 

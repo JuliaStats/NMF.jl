@@ -7,7 +7,7 @@ function run(algname)
     # choose algorithm
     alg = algname == "mult-mse" ? NMF.MultUpdate(obj=:mse, maxiter=30, verbose=true) :
           algname == "mult-div" ? NMF.MultUpdate(obj=:div, maxiter=30, verbose=true) :
-          algname == "als" ? NMF.NaiveALS(maxiter=30, verbose=true) :
+          algname == "projals" ? NMF.ProjectedALS(maxiter=30, verbose=true) :
           error("Invalid algorithm name.")
 
     # prepare data
@@ -49,7 +49,7 @@ function print_help()
     println()
     println("    mult-mse:  multiplicative update (minimize MSE)")
     println("    mult-div:  multiplicative update (minimize divergence)")
-    println("    als:       Naive ALS")
+    println("    projals:   Projected ALS")
     println()
 end
 

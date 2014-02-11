@@ -1,4 +1,4 @@
-# Naive Alternating Least Squared method
+# Projected Alternating Least Squared method
 #
 #  Solve the following problem via alternate updating:
 #
@@ -15,14 +15,14 @@
 import Base.LinAlg: copytri!
 import Base.LAPACK: potrs!, potrf!, potri!
 
-type NaiveALS
+type ProjectedALS
     maxiter::Int
     verbose::Bool
     tol::Float64
     lambda_w::Float64
     lambda_h::Float64
 
-    function NaiveALS(;maxiter::Integer=100,
+    function ProjectedALS(;maxiter::Integer=100,
                        verbose::Bool=false,
                        tol::Real=1.0e-6,
                        lambda_w::Real=1.0e-6,
@@ -36,23 +36,23 @@ type NaiveALS
     end
 end
 
-solve!(alg::NaiveALS, X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64}) =
-    nmf_skeleton!(NaiveALSUpd(alg.lambda_w, alg.lambda_h), 
+solve!(alg::ProjectedALS, X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64}) =
+    nmf_skeleton!(ProjectedALSUpd(alg.lambda_w, alg.lambda_h), 
                   X, W, H, alg.maxiter, alg.verbose, alg.tol)
 
 
-immutable NaiveALSUpd <: NMFUpdater
+immutable ProjectedALSUpd <: NMFUpdater
     lambda_w::Float64
     lambda_h::Float64
 end
 
-immutable NaiveALSUpd_State
+immutable ProjectedALSUpd_State
     WH::Matrix{Float64}
     WtW::Matrix{Float64}
     HHt::Matrix{Float64}
     XHt::Matrix{Float64}
 
-    function NaiveALSUpd_State(X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64})
+    function ProjectedALSUpd_State(X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64})
         p, n, k = nmf_checksize(X, W, H)
         new(W * H, 
             Array(Float64, k, k), 
@@ -61,9 +61,9 @@ immutable NaiveALSUpd_State
     end
 end
 
-prepare_state(::NaiveALSUpd, X, W, H) = NaiveALSUpd_State(X, W, H)
+prepare_state(::ProjectedALSUpd, X, W, H) = ProjectedALSUpd_State(X, W, H)
 
-function evaluate_objv(u::NaiveALSUpd, s::NaiveALSUpd_State, X, W, H)
+function evaluate_objv(u::ProjectedALSUpd, s::ProjectedALSUpd_State, X, W, H)
     r = 0.5 * sqL2dist(X, s.WH)
     if u.lambda_w > 0
         r += (0.5 * u.lambda_w) * abs2(normfro(W))
@@ -74,7 +74,7 @@ function evaluate_objv(u::NaiveALSUpd, s::NaiveALSUpd_State, X, W, H)
     return r
 end
 
-function update_wh!(upd::NaiveALSUpd, s::NaiveALSUpd_State, 
+function update_wh!(upd::ProjectedALSUpd, s::ProjectedALSUpd_State, 
                     X::Matrix{Float64}, 
                     W::Matrix{Float64}, 
                     H::Matrix{Float64})

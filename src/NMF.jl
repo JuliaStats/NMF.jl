@@ -6,6 +6,6 @@ module NMF
     include("common.jl")
     include("initialization.jl")
     include("multupd.jl")
-    include("naiveals.jl")
+    include("projals.jl")
 
 end # module
