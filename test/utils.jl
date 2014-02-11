@@ -16,6 +16,18 @@ NMF.adddiag!(a, 0.)
 NMF.adddiag!(a, 2.5)
 @test a == a0 + 2.5 * eye(3,3)
 
+## normalize1!
+
+a = rand(5)
+NMF.normalize1!(a)
+@test_approx_eq sum(a) 1.0
+
+## normalize1_cols!
+
+a = rand(5, 6)
+NMF.normalize1_cols!(a)
+@test_approx_eq vec(sum(a,1)) ones(6)
+
 ## projectnn!
 
 a0 = randn(5, 5)

@@ -1,5 +1,6 @@
 module NMF
 
+	using ArrayViews
 	using MLBase
 	import Base: sum!
 

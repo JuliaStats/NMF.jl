@@ -1,9 +1,10 @@
 
-tests = ["utils"]
+tests = ["utils", 
+         "initialization"]
 
 println("Running tests:")
 for t in tests
-	tp = joinpath("test", "$t.jl")
-	println("* $tp ...")
-	include(tp)
+    tp = joinpath("test", "$t.jl")
+    println("* $tp ...")
+    include(tp)
 end

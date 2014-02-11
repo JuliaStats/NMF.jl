@@ -13,6 +13,14 @@ function adddiag!(A::Matrix{Float64}, a::Float64)
 	return A
 end
 
+normalize1!(a::ContiguousVector{Float64}) = scale!(a, 1.0 / sum(a))
+
+function normalize1_cols!(a::DenseArray{Float64,2})
+	for j = 1:size(a,2)
+		normalize1!(view(a, :, j))
+	end
+end
+
 function projectnn!(A::AbstractArray{Float64})
 	# project back all entries to non-negative domain
 	@inbounds for i = 1:length(A)
