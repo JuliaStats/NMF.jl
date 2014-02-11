@@ -29,7 +29,7 @@ Most types and functions in this package are not exported. Users are encouraged 
 
 ## Initialization
 
-- **NMF.randinit**(X, k[; zeroh=false])
+- **NMF.randinit**(X, k[; zeroh=false, normalize=false])
 
     Initialize ``W`` and ``H`` given the input matrix ``X`` and the rank ``k``. This function returns a pair ``(W, H)``. 
 
@@ -42,6 +42,8 @@ Most types and functions in this package are not exported. Users are encouraged 
     ```
 
     For some algorithms (*e.g.* ALS), only ``W`` needs to be initialized. For such cases, one may set the keyword argument ``zeroh``to be ``true``, then in the output ``H`` will be simply a zero matrix of size ``(k, n)``.
+
+    Another keyword argument is ``normalize``. If ``normalize`` is set to ``true``, columns of ``W`` will be normalized such that each column sum to one.
 
 
 ## Factorization Algorithms
