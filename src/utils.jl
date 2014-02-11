@@ -22,6 +22,25 @@ function projectnn!(A::AbstractArray{Float64})
 	end
 end
 
+function posneg!(A::Matrix{Float64}, Ap::Matrix{Float64}, An::Matrix{Float64})
+	# decompose A into positive part Ap and negative part An
+	# s.t. A = Ap - An
+
+	n = length(A)
+	length(Ap) == length(An) == n || error("Input dimensions mismatch.")
+
+	@inbounds for i = 1:n
+		ai = A[i]
+		if ai >= 0.0
+			Ap[i] = ai
+			An[i] = 0.0
+		else
+			Ap[i] = 0.0
+			An[i] = -ai
+		end
+	end
+end
+
 function pdsolve!(A::Matrix{Float64}, x::VecOrMat{Float64}, uplo::Char='U')
 	# A must be positive definite
 	# x <- inv(A) * x
