@@ -7,6 +7,8 @@ A Julia package for non-negative matrix factorization (NMF).
 
 ## Development Status
 
+**Note:** Nonnegative Matrix Factorization is an area of active research. New algorithms are proposed every year. Contributions are very welcomed.
+
 #### Done
 
 - Lee & Seung's Multiplicative Update (for both MSE & Divergence objectives)
@@ -19,6 +21,7 @@ A Julia package for non-negative matrix factorization (NMF).
 - Projected Gradient Methods
 - Sparse NMF
 - Probabilistic NMF
+
 
 
 ## Overview
