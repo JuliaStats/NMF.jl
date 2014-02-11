@@ -23,10 +23,10 @@ type ProjectedALS
     lambda_h::Float64
 
     function ProjectedALS(;maxiter::Integer=100,
-                       verbose::Bool=false,
-                       tol::Real=1.0e-6,
-                       lambda_w::Real=1.0e-6,
-                       lambda_h::Real=1.0e-6)
+                           verbose::Bool=false,
+                           tol::Real=1.0e-6,
+                           lambda_w::Real=1.0e-6,
+                           lambda_h::Real=1.0e-6)
 
         new(int(maxiter), 
             verbose,

@@ -23,14 +23,61 @@ A Julia package for non-negative matrix factorization (NMF).
 - Probabilistic NMF
 
 
-
 ## Overview
 
 *Non-negative Matrix Factorization (NMF)* generally refers to the techniques for factorizing a non-negative matrix ``X`` into the product of two lower rank matrices ``W`` and ``H``, such that ``WH`` optimally approximates ``X`` in some sense. Such techniques are widely used in text mining, image analysis, and recommendation systems. 
 
 This package provides two sets of tools, respectively for *initilization* and *optimization*. A typical NMF procedure consists of two steps: (1) use an initilization function that initialize ``W`` and ``H``; and (2) use an optimization algorithm to pursue the optimal solution.
 
-Most types and functions in this package are not exported. Users are encouraged to use them with the prefix ``NMF.``. This way allows us to use shorter names within the package and makes the codes more explicit and clear on the user side.
+Most types and functions (except the high-level function ``nnmf``) in this package are not exported. Users are encouraged to use them with the prefix ``NMF.``. This way allows us to use shorter names within the package and makes the codes more explicit and clear on the user side.
+
+
+## High-Level Interface
+
+The package provides a high-level function ``nnmf`` that runs the entire procedure (initialization + optimization):
+
+**nnmf**(X, k, ...)
+
+This function factorizes the input matrix ``X`` into the product of two non-negative matrices ``W`` and ``H``. 
+
+In general, it returns a result instance of type ``NMF.Result``, which is defined as
+
+```julia
+immutable Result
+    W::Matrix{Float64}    # W matrix
+    H::Matrix{Float64}    # H matrix
+    niters::Int           # number of elapsed iterations
+    converged::Bool       # whether the optimization procedure converges
+    objvalue::Float64     # objective value of the last step
+end
+```
+
+The function supports the following keyword arguments:
+
+- ``init``:  A symbol that indicates the initialization method (default = ``:nndsvdar``). 
+
+    This argument accepts the following values:
+
+    - ``random``:  matrices filled with uniformly random values
+    - ``nndsvd``:  standard version of NNDSVD
+    - ``nndsvda``:  NNDSVDa variant
+    - ``nndsvdar``:  NNDSVDar variant  
+                
+- ``alg``:  A symbol that indicates the factorization algorithm (default = ``:projalg``).
+
+    This argument accepts the following values:
+
+    - ``multmse``:  Multiplicative update (using MSE as objective)
+    - ``multdiv``:  Multiplicative update (using divergence as objective)
+    - ``projals``:  Projected Alternate Least Square
+
+- ``maxiter``: Maximum number of iterations (default = ``100``).
+
+- ``tol``: tolerance of changes upon convergence (default = ``1.0e-6``).
+
+- ``verbose``: whether to show procedural information (default = ``false``).
+
+
 
 ## Initialization
 
@@ -82,17 +129,6 @@ Here, ``W`` and ``H`` must be pre-allocated matrices (respectively of size ``(p,
 
 The matrices ``W`` and ``H`` are updated in place.
 
-In general, this function returns a result instance of type ``NMF.Result``, which is defined as
-
-```julia
-immutable Result
-    W::Matrix{Float64}    # W matrix
-    H::Matrix{Float64}    # H matrix
-    niters::Int           # number of elapsed iterations
-    converged::Bool       # whether the optimization procedure converges
-    objvalue::Float64     # objective value of the last step
-end
-```
 
 #### Algorithms
 
@@ -129,12 +165,21 @@ end
 
 Here are examples that demonstrate how to use this package to factorize a non-negative dense matrix.
 
+#### Use High-level Function: nnmf
+
+```julia
+... # prepare input matrix X
+
+r = nnmf(X, k; alg=:multmse, maxiter=30, tol=1.0e-4)
+
+W = r.W
+H = r.H
+```
+
 #### Use Multiplicative Update
 
 ```julia
 import NMF
-
-... # prepare X
 
  # initialize
 W, H = NMF.randinit(X, 5)
@@ -147,8 +192,6 @@ NMF.solve!(NMF.MultUpdate(obj=:mse,maxiter=100), X, W, H)
 
 ```julia
 import NMF
-
-... # prepare X
 
  # initialize
 W, H = NMF.randinit(X, 5)

@@ -4,12 +4,6 @@ using NMF
 
 function run(algname)
 
-    # choose algorithm
-    alg = algname == "mult-mse" ? NMF.MultUpdate(obj=:mse, maxiter=30, verbose=true) :
-          algname == "mult-div" ? NMF.MultUpdate(obj=:div, maxiter=30, verbose=true) :
-          algname == "projals" ? NMF.ProjectedALS(maxiter=30, verbose=true) :
-          error("Invalid algorithm name.")
-
     # prepare data
     p = 8
     k = 5
@@ -19,26 +13,22 @@ function run(algname)
     Hg = abs(randn(k, n))
     X = Wg * Hg + 0.1 * randn(p, n)
 
-    # initialize
-    W0, H0 = NMF.nndsvd(X, k; variant=:ar)
-
+    # run NNMF
     println("Algorithm: $(algname)")
     println("---------------------------------")
 
-    # run optimization
-    r = NMF.solve!(alg, X, W0, H0)
+    r = nnmf(X, k; 
+             init=:nndsvdar,
+             alg=symbol(algname), 
+             maxiter=30, 
+             verbose=true)
 
+    # display results
     println("numiters  = $(r.niters)")
     println("converged = $(r.converged)")
     @printf("objvalue  = %.6e\n", r.objvalue)
     println("W matrix = ")
-    W = r.W
-    for i = 1:p
-        for j = 1:k
-            @printf("%8.4f ", W[i,j])
-        end
-        println()
-    end
+    NMF.printf_mat(r.W)
 
     println()
 end
@@ -51,8 +41,8 @@ function print_help()
     println()
     println("  <alg> is the name of the chosen algorithm, which can be ")
     println()
-    println("    mult-mse:  multiplicative update (minimize MSE)")
-    println("    mult-div:  multiplicative update (minimize divergence)")
+    println("    multmse:   Multiplicative update (minimize MSE)")
+    println("    multdiv:   Multiplicative update (minimize divergence)")
     println("    projals:   Projected ALS")
     println()
 end
