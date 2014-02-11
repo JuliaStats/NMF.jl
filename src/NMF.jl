@@ -9,5 +9,6 @@ module NMF
 
     include("common.jl")
     include("multupd.jl")
+    include("naiveals.jl")
 
 end # module

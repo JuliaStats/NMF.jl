@@ -1,0 +1,123 @@
+# Naive Alternating Least Squared method
+#
+#  Solve the following problem via alternate updating:
+#
+#     (1/2) * ||X - WH||^2 
+#   + (lambda_w/2) * ||W||^2
+#   + (lambda_h/2) * ||H||^2
+#
+#  At each iteration, the algorithm updates H and W, holding
+#  the other fixed. Particularly, it obtains H and W by solving
+#  an unconstrained least square problem and then casting 
+#  negative entries back to zeros.
+#
+
+import Base.LinAlg: copytri!
+import Base.LAPACK: potrs!, potrf!, potri!
+
+type NaiveALS
+    maxiter::Int
+    verbose::Bool
+    tol::Float64
+    lambda_w::Float64
+    lambda_h::Float64
+
+    function NaiveALS(;maxiter::Integer=100,
+                       verbose::Bool=false,
+                       tol::Real=1.0e-6,
+                       lambda_w::Real=1.0e-6,
+                       lambda_h::Real=1.0e-6)
+
+        new(int(maxiter), 
+            verbose,
+            float64(tol),
+            float64(lambda_w), 
+            float64(lambda_h))
+    end
+end
+
+nmf_solve!(alg::NaiveALS, X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64}) =
+    nmf_skeleton!(NaiveALSUpd(alg.lambda_w, alg.lambda_h), 
+                  X, W, H, alg.maxiter, alg.verbose, alg.tol)
+
+
+immutable NaiveALSUpd <: NMFUpdater
+    lambda_w::Float64
+    lambda_h::Float64
+end
+
+immutable NaiveALSUpd_State
+    WH::Matrix{Float64}
+    WtW::Matrix{Float64}
+    HHt::Matrix{Float64}
+    XHt::Matrix{Float64}
+
+    function NaiveALSUpd_State(X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64})
+        p, n, k = nmf_checksize(X, W, H)
+        new(W * H, 
+            Array(Float64, k, k), 
+            Array(Float64, k, k), 
+            Array(Float64, p, k))
+    end
+end
+
+prepare_state(::NaiveALSUpd, X, W, H) = NaiveALSUpd_State(X, W, H)
+
+function evaluate_objv(u::NaiveALSUpd, s::NaiveALSUpd_State, X, W, H)
+    r = 0.5 * sqL2dist(X, s.WH)
+    if u.lambda_w > 0
+        r += (0.5 * u.lambda_w) * abs2(normfro(W))
+    end
+    if u.lambda_h > 0
+        r += (0.5 * u.lambda_h) * abs2(normfro(H))
+    end
+    return r
+end
+
+function update_wh!(upd::NaiveALSUpd, s::NaiveALSUpd_State, 
+                    X::Matrix{Float64}, 
+                    W::Matrix{Float64}, 
+                    H::Matrix{Float64})
+
+    k = size(W, 2)
+
+    # fields
+    WH::Matrix{Float64} = s.WH
+    WtW::Matrix{Float64} = s.WtW
+    HHt::Matrix{Float64} = s.HHt
+    XHt::Matrix{Float64} = s.XHt
+    lambda_w::Float64 = upd.lambda_w
+    lambda_h::Float64 = upd.lambda_h
+
+    # update H
+    At_mul_B!(WtW, W, W)
+    if lambda_h > 0
+        for i = 1:k; WtW[i,i] += lambda_h; end
+    end
+    At_mul_B!(H, W, X)   # H <- W'X
+    potrf!('U', WtW)     # H <- inv(WtW) * H
+    potrs!('U', WtW, H)  
+    for i = 1:length(H)
+        if H[i] < 0.0; H[i] = 0.0; end
+    end
+
+    # update W
+    A_mul_Bt!(HHt, H, H)
+    if lambda_w > 0
+        for i = 1:k; HHt[i,i] += lambda_w; end
+    end
+    A_mul_Bt!(XHt, X, H)  # XHt <- XH'
+
+    potrf!('U', HHt)  # HHt <- inv(HHt)
+    potri!('U', HHt)
+    copytri!(HHt, 'U')  
+    A_mul_B!(W, XHt, HHt)  # W <- XHt * inv(H*H' + lambda_w I)
+    for i = 1:length(W)
+        if W[i] < 0.0; W[i] = 0.0; end
+    end
+
+    # update WH
+    A_mul_B!(WH, W, H)
+end
+
+

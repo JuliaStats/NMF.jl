@@ -3,9 +3,9 @@
 using NMF
 
 # data
-p = 3
-k = 2
-n = 5
+p = 8
+k = 5
+n = 100
 
 Wg = abs(randn(p, k))
 Hg = abs(randn(k, n))

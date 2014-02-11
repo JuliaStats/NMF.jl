@@ -66,7 +66,7 @@ immutable MultUpdMSE_State
 end
 
 prepare_state(::MultUpdMSE, X, W, H) = MultUpdMSE_State(X, W, H)
-evaluate_objv(::MultUpdMSE, s::MultUpdMSE_State, X, W, H) = msd(X, s.WH)
+evaluate_objv(::MultUpdMSE, s::MultUpdMSE_State, X, W, H) = sqL2dist(X, s.WH)
 
 function update_wh!(upd::MultUpdMSE, s::MultUpdMSE_State, 
                     X::Matrix{Float64}, 

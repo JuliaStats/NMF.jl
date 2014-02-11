@@ -9,10 +9,10 @@ A Julia package for non-negative matrix factorization (NMF).
 #### Done
 
 - Lee & Seung's Multiplicative Update (for both MSE & Divergence objectives)
+- Alternate Least Square (ALS) 
 
 #### To do
 
-- Alternate Least Square (ALS) with simple thresholding
 - Alternate proximal gradient method
 - Sparse NMF
 
