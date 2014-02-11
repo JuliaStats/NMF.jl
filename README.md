@@ -12,13 +12,14 @@ A Julia package for non-negative matrix factorization (NMF).
 - Lee & Seung's Multiplicative Update (for both MSE & Divergence objectives)
 - Projected Alternate Least Square (Projected ALS) 
 - Random Initialization
+- NNDSVD Initialization
 
 #### To do
 
-- NNDSVD Initilization
 - Projected Gradient Methods
-- NMF with sparsity regularization
+- Sparse NMF
 - Probabilistic NMF
+
 
 ## Overview
 
