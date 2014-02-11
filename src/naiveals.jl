@@ -36,7 +36,7 @@ type NaiveALS
     end
 end
 
-nmf_solve!(alg::NaiveALS, X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64}) =
+solve!(alg::NaiveALS, X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64}) =
     nmf_skeleton!(NaiveALSUpd(alg.lambda_w, alg.lambda_h), 
                   X, W, H, alg.maxiter, alg.verbose, alg.tol)
 

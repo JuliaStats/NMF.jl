@@ -31,7 +31,7 @@ function run(algname)
     println("Algorithm: $(algname)")
     println("---------------------------------")
 
-    r = nmf_solve!(alg, X, W0, H0)
+    r = NMF.solve!(alg, X, W0, H0)
 
     println("numiters  = $(r.niters)")
     println("converged = $(r.converged)")

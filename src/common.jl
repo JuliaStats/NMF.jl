@@ -19,14 +19,14 @@ end
 
 # the result type
 
-immutable NMFResult
+immutable Result
     W::Matrix{Float64}
     H::Matrix{Float64}
     niters::Int
     converged::Bool
     objvalue::Float64
 
-    function NMFResult(W::Matrix{Float64}, H::Matrix{Float64}, 
+    function Result(W::Matrix{Float64}, H::Matrix{Float64}, 
                        niters::Int, converged::Bool, objv::Float64)
 
         size(W, 2) == size(H, 1) || 
@@ -83,7 +83,7 @@ function nmf_skeleton!(updater::NMFUpdater,
     if !verbose
         objv = msd(X, WH) 
     end
-    return NMFResult(W, H, t, converged, objv)
+    return Result(W, H, t, converged, objv)
 end
 
 

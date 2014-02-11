@@ -32,7 +32,7 @@ type MultUpdate
     end
 end
 
-function nmf_solve!(alg::MultUpdate, 
+function solve!(alg::MultUpdate, 
                     X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64})
 
     if alg.obj == :mse
