@@ -36,6 +36,15 @@ function run(algname)
     println("numiters  = $(r.niters)")
     println("converged = $(r.converged)")
     @printf("objvalue  = %.6e\n", r.objvalue)
+    println("W matrix = ")
+    W = r.W
+    for i = 1:p
+        for j = 1:k
+            @printf("%8.4f ", W[i,j])
+        end
+        println()
+    end
+
     println()
 end
 
