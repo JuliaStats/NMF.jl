@@ -45,6 +45,23 @@ Most types and functions in this package are not exported. Users are encouraged 
 
     Another keyword argument is ``normalize``. If ``normalize`` is set to ``true``, columns of ``W`` will be normalized such that each column sum to one.
 
+- **NMF.nndsvd**(X, k[; zeroh=false, variant=:std])
+
+    Use the *Non-Negative Double Singular Value Decomposition (NNDSVD)* algorithm to initialize ``W`` and ``H``. 
+
+    Reference: C. Boutsidis, and E. Gallopoulos. SVD based initialization: A head start for nonnegative matrix factorization. Pattern Recognition, 2007.
+
+    Usage:
+
+    ```julia
+    W, H = NMF.nndsvd(X, k)
+    ```
+
+    This function has two keyword arguments:
+
+    - ``zeroh``: have ``H`` initialized when it is set to ``true``, or set ``H`` to all zeros when it is set to ``false``.
+    - ``variant``: the variant of the algorithm. Default is ``std``, meaning to use the standard version, which would generate a rather sparse ``W``. Other values are ``a`` and ``ar``, respectively corresponding to the variants: *NNDSVDa* and *NNDSVDar*. Particularly, ``ar`` is recommended for dense NMF.
+
 
 ## Factorization Algorithms
 

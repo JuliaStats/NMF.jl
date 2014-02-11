@@ -19,18 +19,13 @@ function run(algname)
     Hg = abs(randn(k, n))
     X = Wg * Hg + 0.1 * randn(p, n)
 
-    # randomly perturb the ground-truth
-    # to provide a reasonable init
-    #
-    # in practice, one have to resort to
-    # other methods to initialize W & H
-    #
-    W0 = Wg .* (0.8 + 0.4 * rand(size(Wg)))
-    H0 = Hg .* (0.8 + 0.4 * rand(size(Hg)))
+    # initialize
+    W0, H0 = NMF.nndsvd(X, k; variant=:ar)
 
     println("Algorithm: $(algname)")
     println("---------------------------------")
 
+    # run optimization
     r = NMF.solve!(alg, X, W0, H0)
 
     println("numiters  = $(r.niters)")
