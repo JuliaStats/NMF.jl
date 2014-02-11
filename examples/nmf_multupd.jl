@@ -26,7 +26,7 @@ H0 = Hg .* (0.8 + 0.4 * rand(size(Hg)))
 println("obj: minimize MSE")
 println("---------------------------")
 
-alg = NMFMultUpdate(obj=:mse, maxiter=20, verbose=true)
+alg = NMF.MultUpdate(obj=:mse, maxiter=20, verbose=true)
 r = nmf_solve!(alg, X, copy(W0), copy(H0))
 
 println("numiters  = $(r.niters)")
@@ -39,7 +39,7 @@ println()
 println("obj: minimize divergence")
 println("---------------------------")
 
-alg = NMFMultUpdate(obj=:div, maxiter=20, verbose=true)
+alg = NMF.MultUpdate(obj=:div, maxiter=20, verbose=true)
 r = nmf_solve!(alg, X, copy(W0), copy(H0))
 
 println("numiters  = $(r.niters)")

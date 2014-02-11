@@ -6,18 +6,18 @@
 #   Matrix Factorization. Advances in NIPS, 2001.
 #
 
-type NMFMultUpdate
+type MultUpdate
     obj::Symbol         # objective :mse or :div
     maxiter::Int        # maximum number of iterations
     verbose::Bool       # whether to show procedural information
     tol::Float64        # change tolerance upon convergence
     lambda::Float64     # regularization coefficient
 
-    function NMFMultUpdate(;obj::Symbol=:mse,
-                            maxiter::Integer=100, 
-                            verbose::Bool=false,
-                            tol::Real=1.0e-6, 
-                            lambda::Real=1.0e-9)
+    function MultUpdate(;obj::Symbol=:mse,
+                         maxiter::Integer=100, 
+                         verbose::Bool=false,
+                         tol::Real=1.0e-6, 
+                         lambda::Real=1.0e-9)
 
         obj == :mse || obj == :div || error("Invalid value for obj.")
         maxiter > 1 || error("maxiter must be greater than 1.")
@@ -32,30 +32,30 @@ type NMFMultUpdate
     end
 end
 
-function nmf_solve!(alg::NMFMultUpdate, 
+function nmf_solve!(alg::MultUpdate, 
                     X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64})
 
     if alg.obj == :mse
-        nmf_skeleton!(NMFMultUpdMSE(alg.lambda), X, W, H, alg.maxiter, alg.verbose, alg.tol)
+        nmf_skeleton!(MultUpdMSE(alg.lambda), X, W, H, alg.maxiter, alg.verbose, alg.tol)
     else # alg == :div
-        nmf_skeleton!(NMFMultUpdDiv(alg.lambda), X, W, H, alg.maxiter, alg.verbose, alg.tol)
+        nmf_skeleton!(MultUpdDiv(alg.lambda), X, W, H, alg.maxiter, alg.verbose, alg.tol)
     end
 end
 
 # the multiplicative updating algorithm for MSE objective
 
-immutable NMFMultUpdMSE <: NMFUpdater 
+immutable MultUpdMSE <: NMFUpdater 
     lambda::Float64
 end
 
-immutable NMFMultUpdMSE_State
+immutable MultUpdMSE_State
     WH::Matrix{Float64}
     WtX::Matrix{Float64}
     WtWH::Matrix{Float64}
     XHt::Matrix{Float64}
     WHHt::Matrix{Float64}
 
-    function NMFMultUpdMSE_State(X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64})
+    function MultUpdMSE_State(X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64})
         p, n, k = nmf_checksize(X, W, H)
         new(W * H, 
             Array(Float64, k, n), 
@@ -65,10 +65,10 @@ immutable NMFMultUpdMSE_State
     end
 end
 
-prepare_state(::NMFMultUpdMSE, X, W, H) = NMFMultUpdMSE_State(X, W, H)
-evaluate_objv(::NMFMultUpdMSE, s::NMFMultUpdMSE_State, X, W, H) = msd(X, s.WH)
+prepare_state(::MultUpdMSE, X, W, H) = MultUpdMSE_State(X, W, H)
+evaluate_objv(::MultUpdMSE, s::MultUpdMSE_State, X, W, H) = msd(X, s.WH)
 
-function update_wh!(upd::NMFMultUpdMSE, s::NMFMultUpdMSE_State, 
+function update_wh!(upd::MultUpdMSE, s::MultUpdMSE_State, 
                     X::Matrix{Float64}, 
                     W::Matrix{Float64}, 
                     H::Matrix{Float64})
@@ -103,11 +103,11 @@ end
 
 # the multiplicative updating algorithm for divergence objective
 
-immutable NMFMultUpdDiv <: NMFUpdater 
+immutable MultUpdDiv <: NMFUpdater 
     lambda::Float64
 end
 
-immutable NMFMultUpdDiv_State
+immutable MultUpdDiv_State
     WH::Matrix{Float64}     
     sW::Matrix{Float64}     # sum(W, 1)
     sH::Matrix{Float64}     # sum(H, 2)
@@ -115,7 +115,7 @@ immutable NMFMultUpdDiv_State
     WtQ::Matrix{Float64}    # W' * Q: size (k, n)
     QHt::Matrix{Float64}    # Q * H': size (p, k)
 
-    function NMFMultUpdDiv_State(X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64})
+    function MultUpdDiv_State(X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64})
         p, n, k = nmf_checksize(X, W, H)
         new(W * H, 
             Array(Float64, 1, k),
@@ -126,10 +126,10 @@ immutable NMFMultUpdDiv_State
     end
 end
 
-prepare_state(::NMFMultUpdDiv, X, W, H) = NMFMultUpdDiv_State(X, W, H)
-evaluate_objv(::NMFMultUpdDiv, s::NMFMultUpdDiv_State, X, W, H) = gkldiv(X, s.WH)
+prepare_state(::MultUpdDiv, X, W, H) = MultUpdDiv_State(X, W, H)
+evaluate_objv(::MultUpdDiv, s::MultUpdDiv_State, X, W, H) = gkldiv(X, s.WH)
 
-function update_wh!(upd::NMFMultUpdDiv, s::NMFMultUpdDiv_State, 
+function update_wh!(upd::MultUpdDiv, s::MultUpdDiv_State, 
                     X::Matrix{Float64}, 
                     W::Matrix{Float64}, 
                     H::Matrix{Float64})
