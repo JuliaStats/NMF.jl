@@ -79,8 +79,6 @@ function update_wh!(upd::ProjectedALSUpd, s::ProjectedALSUpd_State,
                     W::Matrix{Float64}, 
                     H::Matrix{Float64})
 
-    k = size(W, 2)
-
     # fields
     WH::Matrix{Float64} = s.WH
     WtW::Matrix{Float64} = s.WtW
@@ -90,31 +88,16 @@ function update_wh!(upd::ProjectedALSUpd, s::ProjectedALSUpd_State,
     lambda_h::Float64 = upd.lambda_h
 
     # update H
-    At_mul_B!(WtW, W, W)
-    if lambda_h > 0
-        for i = 1:k; WtW[i,i] += lambda_h; end
-    end
+    adddiag!(At_mul_B!(WtW, W, W), lambda_h)
     At_mul_B!(H, W, X)   # H <- W'X
-    potrf!('U', WtW)     # H <- inv(WtW) * H
-    potrs!('U', WtW, H)  
-    for i = 1:length(H)
-        if H[i] < 0.0; H[i] = 0.0; end
-    end
+    pdsolve!(WtW, H)     # H <- inv(WtW) * H
+    projectnn!(H) 
 
     # update W
-    A_mul_Bt!(HHt, H, H)
-    if lambda_w > 0
-        for i = 1:k; HHt[i,i] += lambda_w; end
-    end
-    A_mul_Bt!(XHt, X, H)  # XHt <- XH'
-
-    potrf!('U', HHt)  # HHt <- inv(HHt)
-    potri!('U', HHt)
-    copytri!(HHt, 'U')  
-    A_mul_B!(W, XHt, HHt)  # W <- XHt * inv(H*H' + lambda_w I)
-    for i = 1:length(W)
-        if W[i] < 0.0; W[i] = 0.0; end
-    end
+    adddiag!(A_mul_Bt!(HHt, H, H), lambda_w)
+    A_mul_Bt!(XHt, X, H)    # XHt <- XH'
+    pdrsolve!(XHt, HHt, W)  # W <- XHt * inv(HHt)
+    projectnn!(W)
 
     # update WH
     A_mul_B!(WH, W, H)
