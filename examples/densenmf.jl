@@ -44,6 +44,7 @@ function print_help()
     println("    multmse:   Multiplicative update (minimize MSE)")
     println("    multdiv:   Multiplicative update (minimize divergence)")
     println("    projals:   Projected ALS")
+    println("    alspgrad:  ALS Projected Gradient Descent")
     println()
 end
 

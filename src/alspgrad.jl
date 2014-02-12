@@ -34,10 +34,15 @@ immutable ALSGradUpdH_State
             Array(Float64, k, n),
             Array(Float64, k, n), 
             Array(Float64, k, n),
-            At_mul_B(W, W),
-            At_mul_B(W, X), 
+            Array(Float64, k, k),
+            Array(Float64, k, n), 
             Array(Float64, k, n))
     end
+end
+
+function set_w!(s::ALSGradUpdH_State, X::ContiguousMatrix, W::ContiguousMatrix)
+    At_mul_B!(s.WtW, W, W)
+    At_mul_B!(s.WtX, W, X)
 end
 
 function alspgrad_updateh!(X::Matrix{Float64}, 
@@ -51,6 +56,7 @@ function alspgrad_updateh!(X::Matrix{Float64},
                            verbose::Bool = false)
 
     s = ALSGradUpdH_State(X, W, H)
+    set_w!(s, X, W)
     _alspgrad_updateh!(X, W, H, s, 
                        maxiter, traceiter, tolg, 
                        beta, sigma, verbose)
@@ -178,11 +184,17 @@ immutable ALSGradUpdW_State
             Array(Float64, p, k),
             Array(Float64, p, k), 
             Array(Float64, p, k),
-            A_mul_Bt(H, H),
-            A_mul_Bt(X, H), 
+            Array(Float64, k, k),
+            Array(Float64, p, k), 
             Array(Float64, p, k))
     end
 end
+
+function set_h!(s::ALSGradUpdW_State, X::ContiguousMatrix, H::ContiguousMatrix)
+    A_mul_Bt!(s.HHt, H, H)
+    A_mul_Bt!(s.XHt, X, H)
+end
+
 
 function alspgrad_updatew!(X::Matrix{Float64}, 
                            W::Matrix{Float64}, 
@@ -195,6 +207,7 @@ function alspgrad_updatew!(X::Matrix{Float64},
                            verbose::Bool = false)
 
     s = ALSGradUpdW_State(X, W, H)
+    set_h!(s, X, H)
     _alspgrad_updatew!(X, W, H, s, 
                        maxiter, traceiter, tolg, 
                        beta, sigma, verbose)
@@ -302,6 +315,72 @@ function _alspgrad_updatew!(X::Matrix{Float64},     # size (p, n)
         end
     end
     return H
+end
+
+
+## main algorithm
+
+type ALSPGrad
+    maxiter::Int      # maximum number of main iterations
+    maxsubiter::Int   # maximum number of iterations within a sub-routine
+    tol::Float64      # tolerance of changes on W & H (main)
+    tolg::Float64     # tolerance of grad norm in sub-routine
+    verbose::Bool     # whether to show procedural information (main)
+
+    function ALSPGrad(;maxiter::Integer=100, 
+                       maxsubiter::Integer=200,
+                       tol::Real=1.0e-6, 
+                       tolg::Real=1.0e-4, 
+                       verbose::Bool=false)
+        new(int(maxiter), 
+            int(maxsubiter),
+            float64(tol), 
+            float64(tolg), 
+            verbose)
+    end
+end
+
+immutable ALSPGradUpd <: NMFUpdater
+    maxsubiter::Int
+    tolg::Float64  
+end
+
+solve!(alg::ALSPGrad, X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64}) =
+    nmf_skeleton!(ALSPGradUpd(alg.maxsubiter, alg.tolg), 
+                  X, W, H, alg.maxiter, alg.verbose, alg.tol)
+
+
+immutable ALSPGradUpd_State
+    WH::Matrix{Float64}
+    uhstate::ALSGradUpdH_State
+    uwstate::ALSGradUpdW_State
+
+    ALSPGradUpd_State(X::ContiguousMatrix, W::ContiguousMatrix, H::ContiguousMatrix) = 
+        new(W * H, 
+            ALSGradUpdH_State(X, W, H), 
+            ALSGradUpdW_State(X, W, H))
+end
+
+prepare_state(::ALSPGradUpd, X, W, H) = ALSPGradUpd_State(X, W, H)
+evaluate_objv(u::ALSPGradUpd, s::ALSPGradUpd_State, X, W, H) = sqL2dist(X, s.WH)
+
+function update_wh!(upd::ALSPGradUpd, s::ALSPGradUpd_State, 
+                    X::Matrix{Float64}, 
+                    W::Matrix{Float64}, 
+                    H::Matrix{Float64})
+
+    # update H
+    set_w!(s.uhstate, X, W)
+    _alspgrad_updateh!(X, W, H, s.uhstate, 
+        upd.maxsubiter, 20, upd.tolg, 0.2, 0.01, false)
+
+    # update W
+    set_h!(s.uwstate, X, H)
+    _alspgrad_updatew!(X, W, H, s.uwstate, 
+        upd.maxsubiter, 20, upd.tolg, 0.2, 0.01, false)
+
+    # update WH
+    A_mul_B!(s.WH, W, H) 
 end
 
 
