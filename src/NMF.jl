@@ -12,6 +12,7 @@ module NMF
     include("initialization.jl")
     include("multupd.jl")
     include("projals.jl")
+    include("alspgrad.jl")
     
     include("interf.jl")
 
