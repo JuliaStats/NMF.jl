@@ -11,8 +11,8 @@ p = 5
 n = 8
 k = 3
 
-Wg = rand(p, k)
-Hg = rand(k, n)
+Wg = max(rand(p, k) - 0.3, 0.0)
+Hg = max(rand(k, n) - 0.3, 0.0)
 X = Wg * Hg
 
 # test update of H

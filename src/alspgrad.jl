@@ -21,6 +21,7 @@ end
 immutable ALSGradUpdH_State
     G::Matrix{Float64}      # gradient
     Hn::Matrix{Float64}     # newH in back-tracking
+    Hp::Matrix{Float64}     # previous newH
     D::Matrix{Float64}      # Htmp - H
     WtW::Matrix{Float64}    # W'W  (pre-computed)
     WtX::Matrix{Float64}    # W'X  (pre-computed)
@@ -31,6 +32,7 @@ immutable ALSGradUpdH_State
         new(Array(Float64, k, n), 
             Array(Float64, k, n),
             Array(Float64, k, n), 
+            Array(Float64, k, n),
             At_mul_B(W, W),
             At_mul_B(W, X), 
             Array(Float64, k, n))
@@ -67,6 +69,7 @@ function _alspgrad_updateh!(X::Matrix{Float64},     # size (p, n)
     # fields
     G::Matrix{Float64} = s.G
     Hn::Matrix{Float64} = s.Hn
+    Hp::Matrix{Float64} = s.Hp
     D::Matrix{Float64} = s.D
     WtW::Matrix{Float64} = s.WtW
     WtX::Matrix{Float64} = s.WtX
@@ -74,8 +77,8 @@ function _alspgrad_updateh!(X::Matrix{Float64},     # size (p, n)
 
     # banner
     if verbose       
-        @printf("%5s    %12s    %12s    %12s    %12s\n", 
-            "Iter", "objv", "objv.change", "1st-ord",  "back-tracks")
+        @printf("%5s    %12s    %12s    %12s    %8s    %12s\n", 
+            "Iter", "objv", "objv.change", "1st-ord", "alpha", "back-tracks")
         WH = W * H
         objv = sqL2dist(X, WH)
         @printf("%5d    %12.5e\n", 0, objv)
@@ -84,6 +87,8 @@ function _alspgrad_updateh!(X::Matrix{Float64},     # size (p, n)
     # main loop
     t = 0
     converged = false
+    to_decr = true
+    α = 1.0
     while !converged && t < maxiter
         t += 1
 
@@ -102,8 +107,6 @@ function _alspgrad_updateh!(X::Matrix{Float64},     # size (p, n)
         # back-tracking
         it = 0
         if !converged
-            α = 1.0
-            suff_decr = false
             while it < traceiter
                 it += 1
 
@@ -120,11 +123,27 @@ function _alspgrad_updateh!(X::Matrix{Float64},     # size (p, n)
                 dv2 = BLAS.dot(WtWD, D)  # <D, WtW * D>
                 
                 # back-track
-                if ((1 - σ) * dv1 + 0.5 * dv2) >= 0.0
-                    α *= β
+                suff_decr = ((1 - σ) * dv1 + 0.5 * dv2) < 0.0
+
+                if it == 1
+                    to_decr = !suff_decr
+                end
+
+                if to_decr
+                    if !suff_decr
+                        α *= β
+                    else
+                        copy!(H, Hn)
+                        break
+                    end
                 else
-                    copy!(H, Hn)
-                    break
+                    if suff_decr
+                        copy!(Hp, Hn)
+                        α /= β
+                    else
+                        copy!(H, Hp)
+                        break
+                    end
                 end
             end
         end
@@ -134,8 +153,8 @@ function _alspgrad_updateh!(X::Matrix{Float64},     # size (p, n)
             A_mul_B!(WH, W, H)
             preobjv = objv
             objv = sqL2dist(X, WH)
-            @printf("%5d    %12.5e    %12.5e    %12.5e    %12d\n", 
-                t, objv, objv - preobjv, pgnrm, it)
+            @printf("%5d    %12.5e    %12.5e    %12.5e    %8.4f    %12d\n", 
+                t, objv, objv - preobjv, pgnrm, α, it)
         end
     end
     return H
