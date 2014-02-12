@@ -1,6 +1,7 @@
 
 tests = ["utils", 
-         "initialization"]
+         "initialization", 
+         "alspgrad"]
 
 println("Running tests:")
 for t in tests

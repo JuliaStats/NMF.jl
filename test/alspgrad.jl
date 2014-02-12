@@ -19,11 +19,13 @@ X = Wg * Hg
 
 H = rand(k, n)
 NMF.alspgrad_updateh!(X, Wg, H; maxiter=200)
+@test all(H .>= 0.0)
 @test_approx_eq_eps H Hg 1.0e-4
 
 # test update of W
 
 W = rand(p, k)
 NMF.alspgrad_updatew!(X, W, Hg; maxiter=200)
+@test all(W .>= 0.0)
 @test_approx_eq_eps W Wg 1.0e-4
 

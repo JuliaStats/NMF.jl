@@ -12,13 +12,13 @@ A Julia package for non-negative matrix factorization (NMF).
 #### Done
 
 - Lee & Seung's Multiplicative Update (for both MSE & Divergence objectives)
-- Projected Alternate Least Square (Projected ALS) 
+- (Naive) Projected Alternate Least Squared
+- ALS Projected Gradient Methods
 - Random Initialization
 - NNDSVD Initialization
 
 #### To do
 
-- Projected Gradient Methods
 - Sparse NMF
 - Probabilistic NMF
 
@@ -63,13 +63,14 @@ The function supports the following keyword arguments:
     - ``nndsvda``:  NNDSVDa variant
     - ``nndsvdar``:  NNDSVDar variant  
                 
-- ``alg``:  A symbol that indicates the factorization algorithm (default = ``:projalg``).
+- ``alg``:  A symbol that indicates the factorization algorithm (default = ``:alspgrad``).
 
     This argument accepts the following values:
 
     - ``multmse``:  Multiplicative update (using MSE as objective)
     - ``multdiv``:  Multiplicative update (using divergence as objective)
-    - ``projals``:  Projected Alternate Least Square
+    - ``projals``:  (Naive) Projected Alternate Least Square
+    - ``alspgrad``:  Alternate Least Square using Projected Gradient Descent
 
 - ``maxiter``: Maximum number of iterations (default = ``100``).
 
@@ -149,7 +150,7 @@ The matrices ``W`` and ``H`` are updated in place.
     **Note:** the values above are default values for the keyword arguments. One can override part (or all) of them.
 
 
-- **Projected Alternate Least Square**
+- **(Naive) Projected Alternate Least Square**
 
     This algorithm alternately updates ``W`` and ``H`` while holding the other fixed. Each update step solves ``W`` or ``H`` without enforcing the non-negativity constrait, and forces all negative entries to zeros afterwards. Only ``W`` needs to be initialized. 
 
@@ -160,6 +161,21 @@ The matrices ``W`` and ``H`` are updated in place.
                  lambda_w::Real=1.0e-6,   # L2 regularization coefficient for W
                  lambda_h::Real=1.0e-6)   # L2 regularization coefficient for H
     ```
+
+- **Alternate Least Square Using Projected Gradient Descent**
+
+    Reference: Chih-Jen Lin. Projected Gradient Methods for Non-negative Matrix Factorization. Neural Computing, 19 (2007).
+
+    This algorithm adopts the alternate least square strategy. A efficient projected gradient descent method is used to solve each sub-problem. Both ``W`` and ``H`` need to be initialized.
+
+    ```julia
+    ALSPGrad(maxiter::Integer=100,      # maximum number of iterations (in main procedure)
+             maxsubiter::Integer=200,   # maximum number of iterations in solving each sub-problem
+             tol::Real=1.0e-6,          # tolerance of changes on W and H upon convergence
+             tolg::Real=1.0e-4,         # tolerable gradient norm in sub-problem (first-order optimality)
+             verbose::Bool=false)       # whether to show procedural information
+    ```
+
 
 ## Examples
 
@@ -198,5 +214,17 @@ W, H = NMF.randinit(X, 5)
 
  # optimize 
 NMF.solve!(NMF.ProjectedALS(maxiter=50), X, W, H)
+```
+
+#### Use ALS with Projected Gradient Descent
+
+```julia
+import NMF
+
+ # initialize
+W, H = NMF.nndsvdar(X, 5)
+
+ # optimize 
+NMF.solve!(NMF.ALSPGrad(maxiter=50, tolg=1.0e-6), X, W, H)
 ```
 
