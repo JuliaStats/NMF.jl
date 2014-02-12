@@ -17,12 +17,13 @@ function projgradnorm(g::ContiguousArray{Float64}, x::ContiguousArray{Float64})
     return sqrt(v)
 end
 
+## sub-routines for updating H
 
 immutable ALSGradUpdH_State
     G::Matrix{Float64}      # gradient
     Hn::Matrix{Float64}     # newH in back-tracking
     Hp::Matrix{Float64}     # previous newH
-    D::Matrix{Float64}      # Htmp - H
+    D::Matrix{Float64}      # Hn - H
     WtW::Matrix{Float64}    # W'W  (pre-computed)
     WtX::Matrix{Float64}    # W'X  (pre-computed)
     WtWD::Matrix{Float64}   # W'W * D
@@ -54,7 +55,6 @@ function alspgrad_updateh!(X::Matrix{Float64},
                        maxiter, traceiter, tolg, 
                        beta, sigma, verbose)
 end
-
 
 function _alspgrad_updateh!(X::Matrix{Float64},     # size (p, n)
                             W::Matrix{Float64},     # size (p, k)
@@ -110,7 +110,7 @@ function _alspgrad_updateh!(X::Matrix{Float64},     # size (p, n)
             while it < traceiter
                 it += 1
 
-                # projected update of H to H_
+                # projected update of H to Hn
                 @inbounds for i = 1:length(Hn)
                     hi = H[i]
                     Hn[i] = hi_ = max(hi - α * G[i], 0.0)
@@ -142,6 +142,150 @@ function _alspgrad_updateh!(X::Matrix{Float64},     # size (p, n)
                         α /= β
                     else
                         copy!(H, Hp)
+                        break
+                    end
+                end
+            end
+        end
+
+        # print info
+        if verbose
+            A_mul_B!(WH, W, H)
+            preobjv = objv
+            objv = sqL2dist(X, WH)
+            @printf("%5d    %12.5e    %12.5e    %12.5e    %8.4f    %12d\n", 
+                t, objv, objv - preobjv, pgnrm, α, it)
+        end
+    end
+    return H
+end
+
+
+## sub-routines for updating W
+
+immutable ALSGradUpdW_State
+    G::Matrix{Float64}      # gradient
+    Wn::Matrix{Float64}     # newW in back-tracking
+    Wp::Matrix{Float64}     # previous newW
+    D::Matrix{Float64}      # Wn - W
+    HHt::Matrix{Float64}    # HH' (pre-computed)
+    XHt::Matrix{Float64}    # XH' (pre-computed)
+    DHHt::Matrix{Float64}   # D * HH'
+
+    function ALSGradUpdW_State(X::ContiguousMatrix, W::ContiguousMatrix, H::ContiguousMatrix)
+        p, k = size(W)
+        new(Array(Float64, p, k), 
+            Array(Float64, p, k),
+            Array(Float64, p, k), 
+            Array(Float64, p, k),
+            A_mul_Bt(H, H),
+            A_mul_Bt(X, H), 
+            Array(Float64, p, k))
+    end
+end
+
+function alspgrad_updatew!(X::Matrix{Float64}, 
+                           W::Matrix{Float64}, 
+                           H::Matrix{Float64};
+                           maxiter::Int = 1000, 
+                           traceiter::Int = 20,
+                           tolg::Float64 = 1.0e-6,
+                           beta::Float64 = 0.2, 
+                           sigma::Float64 = 0.01, 
+                           verbose::Bool = false)
+
+    s = ALSGradUpdW_State(X, W, H)
+    _alspgrad_updatew!(X, W, H, s, 
+                       maxiter, traceiter, tolg, 
+                       beta, sigma, verbose)
+end
+
+function _alspgrad_updatew!(X::Matrix{Float64},     # size (p, n)
+                            W::Matrix{Float64},     # size (p, k)
+                            H::Matrix{Float64},     # size (k, n)
+                            s::ALSGradUpdW_State,   # state to hold temporary quantities
+                            maxiter::Int,           # the maximum number of (outer) iterations
+                            traceiter::Int,         # the number of iterations to trace alpha
+                            tolg::Float64,          # first-order optimality tolerance
+                            β::Float64,             # the value of beta (back-tracking ratio)
+                            σ::Float64,             # the value of sigma                            
+                            verbose::Bool)          # whether to show procedural info
+    # fields
+    G::Matrix{Float64} = s.G
+    Wn::Matrix{Float64} = s.Wn
+    Wp::Matrix{Float64} = s.Wp
+    D::Matrix{Float64} = s.D
+    HHt::Matrix{Float64} = s.HHt
+    XHt::Matrix{Float64} = s.XHt
+    DHHt::Matrix{Float64} = s.DHHt
+
+    # banner
+    if verbose       
+        @printf("%5s    %12s    %12s    %12s    %8s    %12s\n", 
+            "Iter", "objv", "objv.change", "1st-ord", "alpha", "back-tracks")
+        WH = W * H
+        objv = sqL2dist(X, WH)
+        @printf("%5d    %12.5e\n", 0, objv)
+    end
+
+    # main loop
+    t = 0
+    converged = false
+    to_decr = true
+    α = 1.0
+    while !converged && t < maxiter
+        t += 1
+
+        # compute gradient
+        A_mul_B!(G, W, HHt)
+        for i = 1:length(G)
+            G[i] -= XHt[i]
+        end
+
+        # compute projected norm of gradient
+        pgnrm = projgradnorm(G, W)
+        if pgnrm < tolg
+            converged = true
+        end
+
+        # back-tracking
+        it = 0
+        if !converged
+            while it < traceiter
+                it += 1
+
+                # projected update of W to Wn
+                @inbounds for i = 1:length(Wn)
+                    wi = W[i]
+                    Wn[i] = wi_ = max(wi - α * G[i], 0.0)
+                    D[i] = wi_ - wi
+                end
+
+                # compute criterion
+                dv1 = BLAS.dot(G, D)  # <G, D>
+                A_mul_B!(DHHt, D, HHt)
+                dv2 = BLAS.dot(DHHt, D)  # <D * HHt, D>
+                
+                # back-track
+                suff_decr = ((1 - σ) * dv1 + 0.5 * dv2) < 0.0
+
+                if it == 1
+                    to_decr = !suff_decr
+                end
+
+                if to_decr
+                    if !suff_decr
+                        α *= β
+                    else
+                        copy!(W, Wn)
+                        break
+                    end
+                else
+                    if suff_decr
+                        copy!(Wp, Wn)
+                        α /= β
+                    else
+                        copy!(W, Wp)
                         break
                     end
                 end
