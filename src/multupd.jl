@@ -33,7 +33,7 @@ type MultUpdate
 end
 
 function solve!(alg::MultUpdate, 
-                    X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64})
+                X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64})
 
     if alg.obj == :mse
         nmf_skeleton!(MultUpdMSE(alg.lambda), X, W, H, alg.maxiter, alg.verbose, alg.tol)

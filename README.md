@@ -1,23 +1,27 @@
 ## NMF.jl
 
 A Julia package for non-negative matrix factorization (NMF).
+[![Build Status](https://travis-ci.org/lindahua/NMF.jl.png?branch=master)](https://travis-ci.org/lindahua/NMF.jl)
 
 ---------------------------
 
 ## Development Status
 
+**Note:** Nonnegative Matrix Factorization is an area of active research. New algorithms are proposed every year. Contributions are very welcomed.
+
 #### Done
 
 - Lee & Seung's Multiplicative Update (for both MSE & Divergence objectives)
-- Alternate Least Square (ALS) 
+- Projected Alternate Least Square (Projected ALS) 
 - Random Initialization
+- NNDSVD Initialization
 
 #### To do
 
-- NNDSVD Initilization
 - Projected Gradient Methods
-- NMF with sparsity regularization
+- Sparse NMF
 - Probabilistic NMF
+
 
 ## Overview
 
@@ -25,11 +29,59 @@ A Julia package for non-negative matrix factorization (NMF).
 
 This package provides two sets of tools, respectively for *initilization* and *optimization*. A typical NMF procedure consists of two steps: (1) use an initilization function that initialize ``W`` and ``H``; and (2) use an optimization algorithm to pursue the optimal solution.
 
-Most types and functions in this package are not exported. Users are encouraged to use them with the prefix ``NMF.``. This way allows us to use shorter names within the package and makes the codes more explicit and clear on the user side.
+Most types and functions (except the high-level function ``nnmf``) in this package are not exported. Users are encouraged to use them with the prefix ``NMF.``. This way allows us to use shorter names within the package and makes the codes more explicit and clear on the user side.
+
+
+## High-Level Interface
+
+The package provides a high-level function ``nnmf`` that runs the entire procedure (initialization + optimization):
+
+**nnmf**(X, k, ...)
+
+This function factorizes the input matrix ``X`` into the product of two non-negative matrices ``W`` and ``H``. 
+
+In general, it returns a result instance of type ``NMF.Result``, which is defined as
+
+```julia
+immutable Result
+    W::Matrix{Float64}    # W matrix
+    H::Matrix{Float64}    # H matrix
+    niters::Int           # number of elapsed iterations
+    converged::Bool       # whether the optimization procedure converges
+    objvalue::Float64     # objective value of the last step
+end
+```
+
+The function supports the following keyword arguments:
+
+- ``init``:  A symbol that indicates the initialization method (default = ``:nndsvdar``). 
+
+    This argument accepts the following values:
+
+    - ``random``:  matrices filled with uniformly random values
+    - ``nndsvd``:  standard version of NNDSVD
+    - ``nndsvda``:  NNDSVDa variant
+    - ``nndsvdar``:  NNDSVDar variant  
+                
+- ``alg``:  A symbol that indicates the factorization algorithm (default = ``:projalg``).
+
+    This argument accepts the following values:
+
+    - ``multmse``:  Multiplicative update (using MSE as objective)
+    - ``multdiv``:  Multiplicative update (using divergence as objective)
+    - ``projals``:  Projected Alternate Least Square
+
+- ``maxiter``: Maximum number of iterations (default = ``100``).
+
+- ``tol``: tolerance of changes upon convergence (default = ``1.0e-6``).
+
+- ``verbose``: whether to show procedural information (default = ``false``).
+
+
 
 ## Initialization
 
-- **NMF.randinit**(X, k[; zeroh=false])
+- **NMF.randinit**(X, k[; zeroh=false, normalize=false])
 
     Initialize ``W`` and ``H`` given the input matrix ``X`` and the rank ``k``. This function returns a pair ``(W, H)``. 
 
@@ -42,6 +94,25 @@ Most types and functions in this package are not exported. Users are encouraged 
     ```
 
     For some algorithms (*e.g.* ALS), only ``W`` needs to be initialized. For such cases, one may set the keyword argument ``zeroh``to be ``true``, then in the output ``H`` will be simply a zero matrix of size ``(k, n)``.
+
+    Another keyword argument is ``normalize``. If ``normalize`` is set to ``true``, columns of ``W`` will be normalized such that each column sum to one.
+
+- **NMF.nndsvd**(X, k[; zeroh=false, variant=:std])
+
+    Use the *Non-Negative Double Singular Value Decomposition (NNDSVD)* algorithm to initialize ``W`` and ``H``. 
+
+    Reference: C. Boutsidis, and E. Gallopoulos. SVD based initialization: A head start for nonnegative matrix factorization. Pattern Recognition, 2007.
+
+    Usage:
+
+    ```julia
+    W, H = NMF.nndsvd(X, k)
+    ```
+
+    This function has two keyword arguments:
+
+    - ``zeroh``: have ``H`` initialized when it is set to ``true``, or set ``H`` to all zeros when it is set to ``false``.
+    - ``variant``: the variant of the algorithm. Default is ``std``, meaning to use the standard version, which would generate a rather sparse ``W``. Other values are ``a`` and ``ar``, respectively corresponding to the variants: *NNDSVDa* and *NNDSVDar*. Particularly, ``ar`` is recommended for dense NMF.
 
 
 ## Factorization Algorithms
@@ -58,17 +129,6 @@ Here, ``W`` and ``H`` must be pre-allocated matrices (respectively of size ``(p,
 
 The matrices ``W`` and ``H`` are updated in place.
 
-In general, this function returns a result instance of type ``NMF.Result``, which is defined as
-
-```julia
-immutable Result
-    W::Matrix{Float64}    # W matrix
-    H::Matrix{Float64}    # H matrix
-    niters::Int           # number of elapsed iterations
-    converged::Bool       # whether the optimization procedure converges
-    objvalue::Float64     # objective value of the last step
-end
-```
 
 #### Algorithms
 
@@ -89,28 +149,37 @@ end
     **Note:** the values above are default values for the keyword arguments. One can override part (or all) of them.
 
 
-- **Naive Alternate Least Square**
+- **Projected Alternate Least Square**
 
     This algorithm alternately updates ``W`` and ``H`` while holding the other fixed. Each update step solves ``W`` or ``H`` without enforcing the non-negativity constrait, and forces all negative entries to zeros afterwards. Only ``W`` needs to be initialized. 
 
     ```julia
-    NaiveALS(maxiter::Integer=100,    # maximum number of iterations
-             verbose::Bool=false,     # whether to show procedural information
-             tol::Real=1.0e-6,        # tolerance of changes on W and H upon convergence
-             lambda_w::Real=1.0e-6,   # L2 regularization coefficient for W
-             lambda_h::Real=1.0e-6)   # L2 regularization coefficient for H
+    ProjectedALS(maxiter::Integer=100,    # maximum number of iterations
+                 verbose::Bool=false,     # whether to show procedural information
+                 tol::Real=1.0e-6,        # tolerance of changes on W and H upon convergence
+                 lambda_w::Real=1.0e-6,   # L2 regularization coefficient for W
+                 lambda_h::Real=1.0e-6)   # L2 regularization coefficient for H
     ```
 
 ## Examples
 
 Here are examples that demonstrate how to use this package to factorize a non-negative dense matrix.
 
+#### Use High-level Function: nnmf
+
+```julia
+... # prepare input matrix X
+
+r = nnmf(X, k; alg=:multmse, maxiter=30, tol=1.0e-4)
+
+W = r.W
+H = r.H
+```
+
 #### Use Multiplicative Update
 
 ```julia
 import NMF
-
-... # prepare X
 
  # initialize
 W, H = NMF.randinit(X, 5)
@@ -124,12 +193,10 @@ NMF.solve!(NMF.MultUpdate(obj=:mse,maxiter=100), X, W, H)
 ```julia
 import NMF
 
-... # prepare X
-
  # initialize
 W, H = NMF.randinit(X, 5)
 
  # optimize 
-NMF.solve!(NMF.NaiveALS(maxiter=50), X, W, H)
+NMF.solve!(NMF.ProjectedALS(maxiter=50), X, W, H)
 ```
 
