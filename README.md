@@ -1,7 +1,7 @@
 ## NMF.jl
 
 A Julia package for non-negative matrix factorization (NMF).
-[![Build Status](https://travis-ci.org/lindahua/NMF.jl.png?branch=master)](https://travis-ci.org/lindahua/NMF.jl)
+[![Build Status](https://travis-ci.org/JuliaStats/NMF.jl.png?branch=master)](https://travis-ci.org/JuliaStats/NMF.jl)
 
 ---------------------------
 
