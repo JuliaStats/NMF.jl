@@ -66,10 +66,10 @@ prepare_state(::ProjectedALSUpd, X, W, H) = ProjectedALSUpd_State(X, W, H)
 function evaluate_objv(u::ProjectedALSUpd, s::ProjectedALSUpd_State, X, W, H)
     r = 0.5 * sqL2dist(X, s.WH)
     if u.lambda_w > 0
-        r += (0.5 * u.lambda_w) * abs2(normfro(W))
+        r += (0.5 * u.lambda_w) * abs2(vecnorm(W))
     end
     if u.lambda_h > 0
-        r += (0.5 * u.lambda_h) * abs2(normfro(H))
+        r += (0.5 * u.lambda_h) * abs2(vecnorm(H))
     end
     return r
 end
