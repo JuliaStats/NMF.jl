@@ -12,7 +12,7 @@ end
 
 function randinit(X::Matrix{Float64}, k::Integer; normalize::Bool=false, zeroh::Bool=false)
     m, n = size(X)
-    randinit(m, n, k, normalize, zeroh)
+    randinit(m, n, k; normalize=normalize, zeroh=zeroh)
 end
 # NNDSVD: Non-Negative Double Singular Value Decomposition
 #
