@@ -1,19 +1,19 @@
-
 # random initialization
 
-function randinit(X::Matrix{Float64}, k::Integer; normalize::Bool=false, zeroh::Bool=false)
-    p, n = size(X)
-
-    W = rand(p, k)
+function randinit(nrows::Integer, ncols::Integer, k::Integer; normalize::Bool=false, zeroh::Bool=false)
+    W = rand(nrows, k)
     if normalize
         normalize1_cols!(W)
     end
 
-    H = zeroh ? zeros(k, n) : rand(k, n)
+    H = zeroh ? zeros(k, ncols) : rand(k, ncols)
     return (W, H)::(Matrix{Float64}, Matrix{Float64})
 end
 
-
+function randinit(X::Matrix{Float64}, k::Integer; normalize::Bool=false, zeroh::Bool=false)
+    m, n = size(X)
+    randinit(m, n, k, normalize, zeroh)
+end
 # NNDSVD: Non-Negative Double Singular Value Decomposition
 #
 # Reference
