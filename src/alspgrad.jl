@@ -6,11 +6,12 @@
 
 ## auxiliary routines
 
-function projgradnorm(g::ContiguousArray{Float64}, x::ContiguousArray{Float64})
-    v = 0.0
+function projgradnorm(g, x)
+    T = eltype(g)
+    v = convert(T, 0.0)
     @inbounds for i = 1:length(g)
         gi = g[i]
-        if gi < 0.0 || x[i] > 0.0
+        if gi < zero(T) || x[i] > zero(T)
             v += abs2(gi)
         end
     end
@@ -19,41 +20,42 @@ end
 
 ## sub-routines for updating H
 
-immutable ALSGradUpdH_State
-    G::Matrix{Float64}      # gradient
-    Hn::Matrix{Float64}     # newH in back-tracking
-    Hp::Matrix{Float64}     # previous newH
-    D::Matrix{Float64}      # Hn - H
-    WtW::Matrix{Float64}    # W'W  (pre-computed)
-    WtX::Matrix{Float64}    # W'X  (pre-computed)
-    WtWD::Matrix{Float64}   # W'W * D
+immutable ALSGradUpdH_State{T}
+    G::Matrix{T}      # gradient
+    Hn::Matrix{T}     # newH in back-tracking
+    Hp::Matrix{T}     # previous newH
+    D::Matrix{T}      # Hn - H
+    WtW::Matrix{T}    # W'W  (pre-computed)
+    WtX::Matrix{T}    # W'X  (pre-computed)
+    WtWD::Matrix{T}   # W'W * D
 
-    function ALSGradUpdH_State(X::ContiguousMatrix, W::ContiguousMatrix, H::ContiguousMatrix)
+    function ALSGradUpdH_State(X, W, H)
         k, n = size(H)
-        new(Array(Float64, k, n), 
-            Array(Float64, k, n),
-            Array(Float64, k, n), 
-            Array(Float64, k, n),
-            Array(Float64, k, k),
-            Array(Float64, k, n), 
-            Array(Float64, k, n))
+        new(Array(T, k, n),
+            Array(T, k, n),
+            Array(T, k, n),
+            Array(T, k, n),
+            Array(T, k, k),
+            Array(T, k, n),
+            Array(T, k, n))
     end
 end
+ALSGradUpdH_State{T}(X, W::VecOrMat{T}, H::VecOrMat{T}) = ALSGradUpdH_State{T}(X, W, H)
 
-function set_w!(s::ALSGradUpdH_State, X::ContiguousMatrix, W::ContiguousMatrix)
+function set_w!(s::ALSGradUpdH_State, X, W)
     At_mul_B!(s.WtW, W, W)
     At_mul_B!(s.WtX, W, X)
 end
 
-function alspgrad_updateh!(X::Matrix{Float64}, 
-                           W::Matrix{Float64}, 
-                           H::Matrix{Float64};
-                           maxiter::Int = 1000, 
-                           traceiter::Int = 20,
-                           tolg::Float64 = 1.0e-6,
-                           beta::Float64 = 0.2, 
-                           sigma::Float64 = 0.01, 
-                           verbose::Bool = false)
+function alspgrad_updateh!{T}(X,
+                              W::VecOrMat{T},
+                              H::VecOrMat{T};
+                              maxiter::Int = 1000,
+                              traceiter::Int = 20,
+                              tolg::T = cbrt(eps(T)),
+                              beta::T = convert(T, 0.2),
+                              sigma::T = convert(T, 0.01),
+                              verbose::Bool = false)
 
     s = ALSGradUpdH_State(X, W, H)
     set_w!(s, X, W)
@@ -62,24 +64,25 @@ function alspgrad_updateh!(X::Matrix{Float64},
                        beta, sigma, verbose)
 end
 
-function _alspgrad_updateh!(X::Matrix{Float64},     # size (p, n)
-                            W::Matrix{Float64},     # size (p, k)
-                            H::Matrix{Float64},     # size (k, n)
+function _alspgrad_updateh!(X,                      # size (p, n)
+                            W::VecOrMat,            # size (p, k)
+                            H::VecOrMat,            # size (k, n)
                             s::ALSGradUpdH_State,   # state to hold temporary quantities
                             maxiter::Int,           # the maximum number of (outer) iterations
                             traceiter::Int,         # the number of iterations to trace alpha
-                            tolg::Float64,          # first-order optimality tolerance
-                            β::Float64,             # the value of beta (back-tracking ratio)
-                            σ::Float64,             # the value of sigma                            
+                            tolg,                   # first-order optimality tolerance
+                            β,                      # the value of beta (back-tracking ratio)
+                            σ,                      # the value of sigma
                             verbose::Bool)          # whether to show procedural info
     # fields
-    G::Matrix{Float64} = s.G
-    Hn::Matrix{Float64} = s.Hn
-    Hp::Matrix{Float64} = s.Hp
-    D::Matrix{Float64} = s.D
-    WtW::Matrix{Float64} = s.WtW
-    WtX::Matrix{Float64} = s.WtX
-    WtWD::Matrix{Float64} = s.WtWD
+    G = s.G
+    Hn = s.Hn
+    Hp = s.Hp
+    D = s.D
+    WtW = s.WtW
+    WtX = s.WtX
+    WtWD = s.WtWD
+    T = eltype(H)
 
     # banner
     if verbose       
@@ -94,7 +97,7 @@ function _alspgrad_updateh!(X::Matrix{Float64},     # size (p, n)
     t = 0
     converged = false
     to_decr = true
-    α = 1.0
+    α = one(T)
     while !converged && t < maxiter
         t += 1
 
@@ -119,7 +122,7 @@ function _alspgrad_updateh!(X::Matrix{Float64},     # size (p, n)
                 # projected update of H to Hn
                 @inbounds for i = 1:length(Hn)
                     hi = H[i]
-                    Hn[i] = hi_ = max(hi - α * G[i], 0.0)
+                    Hn[i] = hi_ = max(hi - α * G[i], zero(T))
                     D[i] = hi_ - hi
                 end
 
@@ -129,7 +132,7 @@ function _alspgrad_updateh!(X::Matrix{Float64},     # size (p, n)
                 dv2 = BLAS.dot(WtWD, D)  # <D, WtW * D>
                 
                 # back-track
-                suff_decr = ((1 - σ) * dv1 + 0.5 * dv2) < 0.0
+                suff_decr = ((1 - σ) * dv1 + convert(T, 0.5) * dv2) < 0
 
                 if it == 1
                     to_decr = !suff_decr
@@ -169,42 +172,43 @@ end
 
 ## sub-routines for updating W
 
-immutable ALSGradUpdW_State
-    G::Matrix{Float64}      # gradient
-    Wn::Matrix{Float64}     # newW in back-tracking
-    Wp::Matrix{Float64}     # previous newW
-    D::Matrix{Float64}      # Wn - W
-    HHt::Matrix{Float64}    # HH' (pre-computed)
-    XHt::Matrix{Float64}    # XH' (pre-computed)
-    DHHt::Matrix{Float64}   # D * HH'
+immutable ALSGradUpdW_State{T}
+    G::Matrix{T}      # gradient
+    Wn::Matrix{T}     # newW in back-tracking
+    Wp::Matrix{T}     # previous newW
+    D::Matrix{T}      # Wn - W
+    HHt::Matrix{T}    # HH' (pre-computed)
+    XHt::Matrix{T}    # XH' (pre-computed)
+    DHHt::Matrix{T}   # D * HH'
 
-    function ALSGradUpdW_State(X::ContiguousMatrix, W::ContiguousMatrix, H::ContiguousMatrix)
+    function ALSGradUpdW_State(X, W, H)
         p, k = size(W)
-        new(Array(Float64, p, k), 
-            Array(Float64, p, k),
-            Array(Float64, p, k), 
-            Array(Float64, p, k),
-            Array(Float64, k, k),
-            Array(Float64, p, k), 
-            Array(Float64, p, k))
+        new(Array(T, p, k),
+            Array(T, p, k),
+            Array(T, p, k),
+            Array(T, p, k),
+            Array(T, k, k),
+            Array(T, p, k),
+            Array(T, p, k))
     end
 end
+ALSGradUpdW_State{T}(X, W::VecOrMat{T}, H::VecOrMat{T}) = ALSGradUpdW_State{T}(X, W, H)
 
-function set_h!(s::ALSGradUpdW_State, X::ContiguousMatrix, H::ContiguousMatrix)
+function set_h!(s::ALSGradUpdW_State, X, H)
     A_mul_Bt!(s.HHt, H, H)
     A_mul_Bt!(s.XHt, X, H)
 end
 
 
-function alspgrad_updatew!(X::Matrix{Float64}, 
-                           W::Matrix{Float64}, 
-                           H::Matrix{Float64};
-                           maxiter::Int = 1000, 
-                           traceiter::Int = 20,
-                           tolg::Float64 = 1.0e-6,
-                           beta::Float64 = 0.2, 
-                           sigma::Float64 = 0.01, 
-                           verbose::Bool = false)
+function alspgrad_updatew!{T}(X,
+                              W::VecOrMat{T},
+                              H::VecOrMat{T};
+                              maxiter::Int = 1000,
+                              traceiter::Int = 20,
+                              tolg::T = cbrt(eps(T)),
+                              beta::T = convert(T, 0.2),
+                              sigma::T = convert(T, 0.01),
+                              verbose::Bool = false)
 
     s = ALSGradUpdW_State(X, W, H)
     set_h!(s, X, H)
@@ -213,24 +217,25 @@ function alspgrad_updatew!(X::Matrix{Float64},
                        beta, sigma, verbose)
 end
 
-function _alspgrad_updatew!(X::Matrix{Float64},     # size (p, n)
-                            W::Matrix{Float64},     # size (p, k)
-                            H::Matrix{Float64},     # size (k, n)
+function _alspgrad_updatew!(X,                      # size (p, n)
+                            W::VecOrMat,            # size (p, k)
+                            H::VecOrMat,            # size (k, n)
                             s::ALSGradUpdW_State,   # state to hold temporary quantities
                             maxiter::Int,           # the maximum number of (outer) iterations
                             traceiter::Int,         # the number of iterations to trace alpha
-                            tolg::Float64,          # first-order optimality tolerance
-                            β::Float64,             # the value of beta (back-tracking ratio)
-                            σ::Float64,             # the value of sigma                            
+                            tolg,                   # first-order optimality tolerance
+                            β,                      # the value of beta (back-tracking ratio)
+                            σ,                      # the value of sigma
                             verbose::Bool)          # whether to show procedural info
     # fields
-    G::Matrix{Float64} = s.G
-    Wn::Matrix{Float64} = s.Wn
-    Wp::Matrix{Float64} = s.Wp
-    D::Matrix{Float64} = s.D
-    HHt::Matrix{Float64} = s.HHt
-    XHt::Matrix{Float64} = s.XHt
-    DHHt::Matrix{Float64} = s.DHHt
+    G = s.G
+    Wn = s.Wn
+    Wp = s.Wp
+    D = s.D
+    HHt = s.HHt
+    XHt = s.XHt
+    DHHt = s.DHHt
+    T = eltype(W)
 
     # banner
     if verbose       
@@ -245,7 +250,7 @@ function _alspgrad_updatew!(X::Matrix{Float64},     # size (p, n)
     t = 0
     converged = false
     to_decr = true
-    α = 1.0
+    α = one(T)
     while !converged && t < maxiter
         t += 1
 
@@ -270,7 +275,7 @@ function _alspgrad_updatew!(X::Matrix{Float64},     # size (p, n)
                 # projected update of W to Wn
                 @inbounds for i = 1:length(Wn)
                     wi = W[i]
-                    Wn[i] = wi_ = max(wi - α * G[i], 0.0)
+                    Wn[i] = wi_ = max(wi - α * G[i], zero(T))
                     D[i] = wi_ - wi
                 end
 
@@ -280,7 +285,7 @@ function _alspgrad_updatew!(X::Matrix{Float64},     # size (p, n)
                 dv2 = BLAS.dot(DHHt, D)  # <D * HHt, D>
                 
                 # back-track
-                suff_decr = ((1 - σ) * dv1 + 0.5 * dv2) < 0.0
+                suff_decr = ((1 - σ) * dv1 + convert(T, 0.5) * dv2) < 0
 
                 if it == 1
                     to_decr = !suff_decr
@@ -320,67 +325,64 @@ end
 
 ## main algorithm
 
-type ALSPGrad
+type ALSPGrad{T}
     maxiter::Int      # maximum number of main iterations
     maxsubiter::Int   # maximum number of iterations within a sub-routine
-    tol::Float64      # tolerance of changes on W & H (main)
-    tolg::Float64     # tolerance of grad norm in sub-routine
+    tol::T      # tolerance of changes on W & H (main)
+    tolg::T     # tolerance of grad norm in sub-routine
     verbose::Bool     # whether to show procedural information (main)
 
     function ALSPGrad(;maxiter::Integer=100, 
                        maxsubiter::Integer=200,
-                       tol::Real=1.0e-6, 
-                       tolg::Real=1.0e-4, 
+                       tol::Real=cbrt(eps(T)),
+                       tolg::Real=eps(T)^(1/4),
                        verbose::Bool=false)
-        new(int(maxiter), 
-            int(maxsubiter),
-            float64(tol), 
-            float64(tolg), 
+        new(maxiter,
+            maxsubiter,
+            tol,
+            tolg,
             verbose)
     end
 end
 
-immutable ALSPGradUpd <: NMFUpdater
+immutable ALSPGradUpd{T} <: NMFUpdater{T}
     maxsubiter::Int
-    tolg::Float64  
+    tolg::T
 end
 
-solve!(alg::ALSPGrad, X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64}) =
+solve!(alg::ALSPGrad, X, W, H) =
     nmf_skeleton!(ALSPGradUpd(alg.maxsubiter, alg.tolg), 
                   X, W, H, alg.maxiter, alg.verbose, alg.tol)
 
 
-immutable ALSPGradUpd_State
-    WH::Matrix{Float64}
+immutable ALSPGradUpd_State{T}
+    WH::Matrix{T}
     uhstate::ALSGradUpdH_State
     uwstate::ALSGradUpdW_State
 
-    ALSPGradUpd_State(X::ContiguousMatrix, W::ContiguousMatrix, H::ContiguousMatrix) = 
+    ALSPGradUpd_State(X, W, H) =
         new(W * H, 
             ALSGradUpdH_State(X, W, H), 
             ALSGradUpdW_State(X, W, H))
 end
 
-prepare_state(::ALSPGradUpd, X, W, H) = ALSPGradUpd_State(X, W, H)
+prepare_state{T}(::ALSPGradUpd{T}, X, W, H) = ALSPGradUpd_State{T}(X, W, H)
 evaluate_objv(u::ALSPGradUpd, s::ALSPGradUpd_State, X, W, H) = sqL2dist(X, s.WH)
 
-function update_wh!(upd::ALSPGradUpd, s::ALSPGradUpd_State, 
-                    X::Matrix{Float64}, 
-                    W::Matrix{Float64}, 
-                    H::Matrix{Float64})
+function update_wh!(upd::ALSPGradUpd, s::ALSPGradUpd_State, X, W, H)
+    T = eltype(W)
 
     # update H
     set_w!(s.uhstate, X, W)
     _alspgrad_updateh!(X, W, H, s.uhstate, 
-        upd.maxsubiter, 20, upd.tolg, 0.2, 0.01, false)
+        upd.maxsubiter, 20, upd.tolg, convert(T, 0.2), convert(T, 0.01), false)
 
     # update W
     set_h!(s.uwstate, X, H)
     _alspgrad_updatew!(X, W, H, s.uwstate, 
-        upd.maxsubiter, 20, upd.tolg, 0.2, 0.01, false)
+        upd.maxsubiter, 20, upd.tolg, convert(T, 0.2), convert(T, 0.01), false)
 
     # update WH
     A_mul_B!(s.WH, W, H) 
 end
-
 

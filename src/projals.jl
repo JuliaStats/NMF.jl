@@ -15,77 +15,77 @@
 import Base.LinAlg: copytri!
 import Base.LAPACK: potrs!, potrf!, potri!
 
-type ProjectedALS
+type ProjectedALS{T}
     maxiter::Int
     verbose::Bool
-    tol::Float64
-    lambda_w::Float64
-    lambda_h::Float64
+    tol::T
+    lambda_w::T
+    lambda_h::T
 
     function ProjectedALS(;maxiter::Integer=100,
                            verbose::Bool=false,
-                           tol::Real=1.0e-6,
-                           lambda_w::Real=1.0e-6,
-                           lambda_h::Real=1.0e-6)
+                           tol::Real=cbrt(eps(T)),
+                           lambda_w::Real=cbrt(eps(T)),
+                           lambda_h::Real=cbrt(eps(T)))
 
-        new(int(maxiter), 
+        new(maxiter,
             verbose,
-            float64(tol),
-            float64(lambda_w), 
-            float64(lambda_h))
+            tol,
+            lambda_w,
+            lambda_h)
     end
 end
 
-solve!(alg::ProjectedALS, X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64}) =
+solve!(alg::ProjectedALS, X, W, H) =
     nmf_skeleton!(ProjectedALSUpd(alg.lambda_w, alg.lambda_h), 
                   X, W, H, alg.maxiter, alg.verbose, alg.tol)
 
 
-immutable ProjectedALSUpd <: NMFUpdater
-    lambda_w::Float64
-    lambda_h::Float64
+immutable ProjectedALSUpd{T} <: NMFUpdater{T}
+    lambda_w::T
+    lambda_h::T
 end
 
-immutable ProjectedALSUpd_State
-    WH::Matrix{Float64}
-    WtW::Matrix{Float64}
-    HHt::Matrix{Float64}
-    XHt::Matrix{Float64}
+immutable ProjectedALSUpd_State{T}
+    WH::Matrix{T}
+    WtW::Matrix{T}
+    HHt::Matrix{T}
+    XHt::Matrix{T}
 
-    function ProjectedALSUpd_State(X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64})
+    function ProjectedALSUpd_State(X, W::Matrix{T}, H::Matrix{T})
         p, n, k = nmf_checksize(X, W, H)
         new(W * H, 
-            Array(Float64, k, k), 
-            Array(Float64, k, k), 
-            Array(Float64, p, k))
+            Array(T, k, k),
+            Array(T, k, k),
+            Array(T, p, k))
     end
 end
 
-prepare_state(::ProjectedALSUpd, X, W, H) = ProjectedALSUpd_State(X, W, H)
+prepare_state{T}(::ProjectedALSUpd{T}, X, W, H) = ProjectedALSUpd_State{T}(X, W, H)
 
-function evaluate_objv(u::ProjectedALSUpd, s::ProjectedALSUpd_State, X, W, H)
-    r = 0.5 * sqL2dist(X, s.WH)
+function evaluate_objv{T}(u::ProjectedALSUpd{T}, s::ProjectedALSUpd_State{T}, X, W, H)
+    r = convert(T, 0.5) * sqL2dist(X, s.WH)
     if u.lambda_w > 0
-        r += (0.5 * u.lambda_w) * abs2(vecnorm(W))
+        r += (convert(T, 0.5) * u.lambda_w) * abs2(vecnorm(W))
     end
     if u.lambda_h > 0
-        r += (0.5 * u.lambda_h) * abs2(vecnorm(H))
+        r += (convert(T, 0.5) * u.lambda_h) * abs2(vecnorm(H))
     end
     return r
 end
 
-function update_wh!(upd::ProjectedALSUpd, s::ProjectedALSUpd_State, 
-                    X::Matrix{Float64}, 
-                    W::Matrix{Float64}, 
-                    H::Matrix{Float64})
+function update_wh!{T}(upd::ProjectedALSUpd{T}, s::ProjectedALSUpd_State{T},
+                       X,
+                       W::Matrix{T},
+                       H::Matrix{T})
 
     # fields
-    WH::Matrix{Float64} = s.WH
-    WtW::Matrix{Float64} = s.WtW
-    HHt::Matrix{Float64} = s.HHt
-    XHt::Matrix{Float64} = s.XHt
-    lambda_w::Float64 = upd.lambda_w
-    lambda_h::Float64 = upd.lambda_h
+    WH = s.WH
+    WtW = s.WtW
+    HHt = s.HHt
+    XHt = s.XHt
+    lambda_w = upd.lambda_w
+    lambda_h = upd.lambda_h
 
     # update H
     adddiag!(At_mul_B!(WtW, W, W), lambda_h)
@@ -102,5 +102,3 @@ function update_wh!(upd::ProjectedALSUpd, s::ProjectedALSUpd_State,
     # update WH
     A_mul_B!(WH, W, H)
 end
-
-

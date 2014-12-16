@@ -2,7 +2,7 @@
 
 # tools to check size
 
-function nmf_checksize(X::AbstractMatrix, 
+function nmf_checksize(X,
                        W::AbstractMatrix, 
                        H::AbstractMatrix)
 
@@ -19,15 +19,15 @@ end
 
 # the result type
 
-immutable Result
-    W::Matrix{Float64}
-    H::Matrix{Float64}
+immutable Result{T}
+    W::Matrix{T}
+    H::Matrix{T}
     niters::Int
     converged::Bool
-    objvalue::Float64
+    objvalue::T
 
-    function Result(W::Matrix{Float64}, H::Matrix{Float64}, 
-                       niters::Int, converged::Bool, objv::Float64)
+    function Result(W::Matrix{T}, H::Matrix{T},
+                       niters::Int, converged::Bool, objv)
 
         size(W, 2) == size(H, 1) || 
             throw(DimensionMismatch("Inner dimensions of W and H mismatch."))
@@ -37,17 +37,17 @@ end
 
 # common algorithmic skeleton for iterative updating methods
 
-abstract NMFUpdater
+abstract NMFUpdater{T}
 
-function nmf_skeleton!(updater::NMFUpdater,
-                       X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64}, 
-                       maxiter::Int, verbose::Bool, tol::Float64)
-    objv = NaN
+function nmf_skeleton!{T}(updater::NMFUpdater{T},
+                          X, W::Matrix{T}, H::Matrix{T},
+                          maxiter::Int, verbose::Bool, tol)
+    objv = convert(T, NaN)
 
     # init
     state = prepare_state(updater, X, W, H)
-    preW = Array(Float64, size(W))
-    preH = Array(Float64, size(H))
+    preW = Array(T, size(W))
+    preH = Array(T, size(H))
     if verbose
         objv = evaluate_objv(updater, state, X, W, H)
         @printf("%-5s     %-13s    %-13s    %-13s\n", "Iter", "objv", "objv.change", "(W & H).change")
@@ -83,7 +83,7 @@ function nmf_skeleton!(updater::NMFUpdater,
     if !verbose
         objv = evaluate_objv(updater, state, X, W, H)
     end
-    return Result(W, H, t, converged, objv)
+    return Result{T}(W, H, t, converged, objv)
 end
 
 

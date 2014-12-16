@@ -6,18 +6,18 @@
 #   Matrix Factorization. Advances in NIPS, 2001.
 #
 
-type MultUpdate
+type MultUpdate{T}
     obj::Symbol         # objective :mse or :div
     maxiter::Int        # maximum number of iterations
     verbose::Bool       # whether to show procedural information
-    tol::Float64        # change tolerance upon convergence
-    lambda::Float64     # regularization coefficient
+    tol::T              # change tolerance upon convergence
+    lambda::T           # regularization coefficient
 
     function MultUpdate(;obj::Symbol=:mse,
                          maxiter::Integer=100, 
                          verbose::Bool=false,
-                         tol::Real=1.0e-6, 
-                         lambda::Real=1.0e-9)
+                         tol::Real=cbrt(eps(T)),
+                         lambda::Real=sqrt(eps(T)))
 
         obj == :mse || obj == :div || error("Invalid value for obj.")
         maxiter > 1 || error("maxiter must be greater than 1.")
@@ -25,15 +25,14 @@ type MultUpdate
         lambda >= 0 || error("lambda must be non-negative.")
 
         new(obj, 
-            int(maxiter), 
+            maxiter,
             verbose, 
-            float64(tol), 
-            float64(lambda))
+            tol,
+            lambda)
     end
 end
 
-function solve!(alg::MultUpdate, 
-                X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64})
+function solve!(alg::MultUpdate, X, W, H)
 
     if alg.obj == :mse
         nmf_skeleton!(MultUpdMSE(alg.lambda), X, W, H, alg.maxiter, alg.verbose, alg.tol)
@@ -44,42 +43,42 @@ end
 
 # the multiplicative updating algorithm for MSE objective
 
-immutable MultUpdMSE <: NMFUpdater 
-    lambda::Float64
+immutable MultUpdMSE{T} <: NMFUpdater{T}
+    lambda::T
 end
 
-immutable MultUpdMSE_State
-    WH::Matrix{Float64}
-    WtX::Matrix{Float64}
-    WtWH::Matrix{Float64}
-    XHt::Matrix{Float64}
-    WHHt::Matrix{Float64}
+immutable MultUpdMSE_State{T}
+    WH::Matrix{T}
+    WtX::Matrix{T}
+    WtWH::Matrix{T}
+    XHt::Matrix{T}
+    WHHt::Matrix{T}
 
-    function MultUpdMSE_State(X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64})
+    function MultUpdMSE_State(X, W::Matrix{T}, H::Matrix{T})
         p, n, k = nmf_checksize(X, W, H)
         new(W * H, 
-            Array(Float64, k, n), 
-            Array(Float64, k, n), 
-            Array(Float64, p, k), 
-            Array(Float64, p, k))
+            Array(T, k, n),
+            Array(T, k, n),
+            Array(T, p, k),
+            Array(T, p, k))
     end
 end
 
-prepare_state(::MultUpdMSE, X, W, H) = MultUpdMSE_State(X, W, H)
+prepare_state{T}(::MultUpdMSE{T}, X, W, H) = MultUpdMSE_State{T}(X, W, H)
 evaluate_objv(::MultUpdMSE, s::MultUpdMSE_State, X, W, H) = sqL2dist(X, s.WH)
 
-function update_wh!(upd::MultUpdMSE, s::MultUpdMSE_State, 
-                    X::Matrix{Float64}, 
-                    W::Matrix{Float64}, 
-                    H::Matrix{Float64})
+function update_wh!{T}(upd::MultUpdMSE{T}, s::MultUpdMSE_State{T},
+                       X,
+                       W::Matrix{T},
+                       H::Matrix{T})
 
     # fields
-    lambda::Float64 = upd.lambda
-    WH::Matrix{Float64} = s.WH
-    WtX::Matrix{Float64} = s.WtX
-    WtWH::Matrix{Float64} = s.WtWH
-    XHt::Matrix{Float64} = s.XHt
-    WHHt::Matrix{Float64} = s.WHHt
+    lambda = upd.lambda
+    WH = s.WH
+    WtX = s.WtX
+    WtWH = s.WtWH
+    XHt = s.XHt
+    WHHt = s.WHHt
 
     # update H
     At_mul_B!(WtX, W, X)
@@ -103,36 +102,36 @@ end
 
 # the multiplicative updating algorithm for divergence objective
 
-immutable MultUpdDiv <: NMFUpdater 
-    lambda::Float64
+immutable MultUpdDiv{T} <: NMFUpdater{T}
+    lambda::T
 end
 
-immutable MultUpdDiv_State
-    WH::Matrix{Float64}     
-    sW::Matrix{Float64}     # sum(W, 1)
-    sH::Matrix{Float64}     # sum(H, 2)
-    Q::Matrix{Float64}      # X ./ (WH + lambda): size (p, n)
-    WtQ::Matrix{Float64}    # W' * Q: size (k, n)
-    QHt::Matrix{Float64}    # Q * H': size (p, k)
+immutable MultUpdDiv_State{T}
+    WH::Matrix{T}
+    sW::Matrix{T}     # sum(W, 1)
+    sH::Matrix{T}     # sum(H, 2)
+    Q::Matrix{T}      # X ./ (WH + lambda): size (p, n)
+    WtQ::Matrix{T}    # W' * Q: size (k, n)
+    QHt::Matrix{T}    # Q * H': size (p, k)
 
-    function MultUpdDiv_State(X::Matrix{Float64}, W::Matrix{Float64}, H::Matrix{Float64})
+    function MultUpdDiv_State(X, W::Matrix{T}, H::Matrix{T})
         p, n, k = nmf_checksize(X, W, H)
         new(W * H, 
-            Array(Float64, 1, k),
-            Array(Float64, k, 1),
-            Array(Float64, p, n), 
-            Array(Float64, k, n), 
-            Array(Float64, p, k))
+            Array(T, 1, k),
+            Array(T, k, 1),
+            Array(T, p, n),
+            Array(T, k, n),
+            Array(T, p, k))
     end
 end
 
-prepare_state(::MultUpdDiv, X, W, H) = MultUpdDiv_State(X, W, H)
+prepare_state{T}(::MultUpdDiv{T}, X, W, H) = MultUpdDiv_State{T}(X, W, H)
 evaluate_objv(::MultUpdDiv, s::MultUpdDiv_State, X, W, H) = gkldiv(X, s.WH)
 
-function update_wh!(upd::MultUpdDiv, s::MultUpdDiv_State, 
-                    X::Matrix{Float64}, 
-                    W::Matrix{Float64}, 
-                    H::Matrix{Float64})
+function update_wh!{T}(upd::MultUpdDiv{T}, s::MultUpdDiv_State{T},
+                       X,
+                       W::Matrix{T},
+                       H::Matrix{T})
 
     p = size(X, 1)
     n = size(X, 2)
@@ -140,13 +139,13 @@ function update_wh!(upd::MultUpdDiv, s::MultUpdDiv_State,
     pn = p * n
 
     # fields
-    lambda::Float64 = upd.lambda
-    sW::Matrix{Float64} = s.sW
-    sH::Matrix{Float64} = s.sH
-    WH::Matrix{Float64} = s.WH
-    Q::Matrix{Float64} = s.Q
-    WtQ::Matrix{Float64} = s.WtQ
-    QHt::Matrix{Float64} = s.QHt
+    lambda = upd.lambda
+    sW = s.sW
+    sH = s.sH
+    WH = s.WH
+    Q = s.Q
+    WtQ = s.WtQ
+    QHt = s.QHt
 
     @assert size(Q) == size(X)
 
@@ -155,7 +154,7 @@ function update_wh!(upd::MultUpdDiv, s::MultUpdDiv_State,
         Q[i] = X[i] / (WH[i] + lambda)
     end
     At_mul_B!(WtQ, W, Q)
-    sum!(fill!(sW, 0.0), W)
+    sum!(fill!(sW, 0), W)
     for j = 1:n, i = 1:k
         H[i,j] *= (WtQ[i,j] / sW[i])
     end
@@ -166,7 +165,7 @@ function update_wh!(upd::MultUpdDiv, s::MultUpdDiv_State,
         Q[i] = X[i] / (WH[i] + lambda)
     end
     A_mul_Bt!(QHt, Q, H)
-    sum!(fill!(sH, 0.0), H)
+    sum!(fill!(sH, 0), H)
     for j = 1:k, i = 1:p
         W[i,j] *= (QHt[i,j] / sH[j])
     end

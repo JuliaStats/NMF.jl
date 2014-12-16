@@ -3,7 +3,7 @@
 import Base.BLAS: nrm2
 import Base.LAPACK: potrf!, potri!, potrs!
 
-function printf_mat(x::ContiguousMatrix{Float64})
+function printf_mat(x::AbstractMatrix)
     for i = 1:size(x,1)
         for j = 1:size(x,2)
             @printf("%8.4f ", x[i,j])
@@ -12,7 +12,7 @@ function printf_mat(x::ContiguousMatrix{Float64})
     end
 end
 
-function mul!(y::ContiguousArray{Float64}, x::ContiguousArray{Float64}, c::Float64)
+function mul!(y::AbstractArray, x::AbstractArray, c::Number)
     n = length(x)
     length(y) == n || error("Inconsistent lengths.")
     for i = 1:n
@@ -21,7 +21,7 @@ function mul!(y::ContiguousArray{Float64}, x::ContiguousArray{Float64}, c::Float
     y
 end
 
-function adddiag!(A::Matrix{Float64}, a::Float64)
+function adddiag!(A::Matrix, a::Number)
     m, n = size(A)
     m == n || error("A must be square.")
     if a != 0.0
@@ -32,25 +32,25 @@ function adddiag!(A::Matrix{Float64}, a::Float64)
     return A
 end
 
-normalize1!(a::ContiguousVector{Float64}) = scale!(a, 1.0 / sum(a))
+normalize1!(a) = scale!(a, 1 / sum(a))
 
-function normalize1_cols!(a::DenseArray{Float64,2})
+function normalize1_cols!(a)
     for j = 1:size(a,2)
         normalize1!(view(a, :, j))
     end
 end
 
-function projectnn!(A::AbstractArray{Float64})
+function projectnn!{T}(A::AbstractArray{T})
     # project back all entries to non-negative domain
     @inbounds for i = 1:length(A)
-        if A[i] < 0.0
-            A[i] = 0.0
+        if A[i] < zero(T)
+            A[i] = zero(T)
         end
     end
 end
 
-function posneg!(A::ContiguousArray{Float64}, 
-                 Ap::ContiguousArray{Float64}, An::ContiguousArray{Float64})
+function posneg!{T}(A::AbstractArray{T},
+                    Ap::AbstractArray{T}, An::AbstractArray{T})
     # decompose A into positive part Ap and negative part An
     # s.t. A = Ap - An
 
@@ -59,17 +59,17 @@ function posneg!(A::ContiguousArray{Float64},
 
     @inbounds for i = 1:n
         ai = A[i]
-        if ai >= 0.0
+        if ai >= zero(T)
             Ap[i] = ai
-            An[i] = 0.0
+            An[i] = zero(T)
         else
-            Ap[i] = 0.0
+            Ap[i] = zero(T)
             An[i] = -ai
         end
     end
 end
 
-function pdsolve!(A::Matrix{Float64}, x::VecOrMat{Float64}, uplo::Char='U')
+function pdsolve!(A, x, uplo::Char='U')
     # A must be positive definite
     # x <- inv(A) * x
     # both A and x will be overriden
@@ -78,7 +78,7 @@ function pdsolve!(A::Matrix{Float64}, x::VecOrMat{Float64}, uplo::Char='U')
     potrs!(uplo, A, x)
 end
 
-function pdrsolve!(A::Matrix{Float64}, B::Matrix{Float64}, x::Matrix{Float64}, uplo::Char='U')
+function pdrsolve!(A, B, x, uplo::Char='U')
     # B must be positive definite
     # x <- A * inv(B)
     # both B and x will be overriden
