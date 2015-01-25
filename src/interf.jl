@@ -1,11 +1,11 @@
 # Interface function: nnmf
 
-function nnmf(X::Matrix{Float64}, k::Integer; 
-              init::Symbol=:nndsvdar, 
-              alg::Symbol=:alspgrad, 
-              maxiter::Integer=100,
-              tol::Real=1.0e-6, 
-              verbose::Bool=false)
+function nnmf{T}(X::AbstractMatrix{T}, k::Integer;
+                 init::Symbol=:nndsvdar,
+                 alg::Symbol=:alspgrad,
+                 maxiter::Integer=100,
+                 tol::Real=cbrt(eps(T)/100),
+                 verbose::Bool=false)
 
     p, n = size(X)
     k <= min(p, n) || error("The value of k should not exceed min(size(X)).")
@@ -32,10 +32,10 @@ function nnmf(X::Matrix{Float64}, k::Integer;
 
     # choose algorithm
     alginst = 
-        alg == :projals ? ProjectedALS(maxiter=maxiter, tol=tol, verbose=verbose) :
-        alg == :alspgrad ? ALSPGrad(maxiter=maxiter, tol=tol, verbose=verbose) :
-        alg == :multmse ? MultUpdate(obj=:mse, maxiter=maxiter, tol=tol, verbose=verbose) :
-        alg == :multdiv ? MultUpdate(obj=:div, maxiter=maxiter, tol=tol, verbose=verbose) :
+        alg == :projals ? ProjectedALS{T}(maxiter=maxiter, tol=tol, verbose=verbose) :
+        alg == :alspgrad ? ALSPGrad{T}(maxiter=maxiter, tol=tol, verbose=verbose) :
+        alg == :multmse ? MultUpdate{T}(obj=:mse, maxiter=maxiter, tol=tol, verbose=verbose) :
+        alg == :multdiv ? MultUpdate{T}(obj=:div, maxiter=maxiter, tol=tol, verbose=verbose) :
         error("Invalid algorithm.")
 
     # run optimization

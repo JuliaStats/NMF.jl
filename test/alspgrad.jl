@@ -1,6 +1,6 @@
 # some tests for ALSPGrad
 
-using NMF
+import NMF
 using Base.Test
 
 # data
