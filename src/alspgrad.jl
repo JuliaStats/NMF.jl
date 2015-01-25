@@ -18,6 +18,24 @@ function projgradnorm(g, x)
     return sqrt(v)
 end
 
+# Determine the maximum step size we can take without
+# all elements of A becoming zero
+# The new value of A would be A = A - α*G
+function maxstep(G, A)
+    T = typeof(one(eltype(A))/one(eltype(G)))
+    αmax = zero(T)
+    for i = 1:length(G)
+        g = G[i]
+        if g >= 0
+            αmax = max(αmax, A[i]/g)
+        else
+            αmax = convert(T, Inf)
+            break
+        end
+    end
+    αmax
+end
+
 ## sub-routines for updating H
 
 immutable ALSGradUpdH_State{T}
@@ -97,7 +115,7 @@ function _alspgrad_updateh!(X,                      # size (p, n)
     t = 0
     converged = false
     to_decr = true
-    α = one(T)
+    α = one(T)/one(eltype(G))
     while !converged && t < maxiter
         t += 1
 
@@ -113,11 +131,15 @@ function _alspgrad_updateh!(X,                      # size (p, n)
             converged = true
         end
 
+        αmax = maxstep(G, H)
+        α = min(α, (β+3eps(β))*αmax)
+
         # back-tracking
         it = 0
         if !converged
             while it < traceiter
                 it += 1
+                isfinite(α) || error("α is not finite")
 
                 # projected update of H to Hn
                 @inbounds for i = 1:length(Hn)
@@ -147,8 +169,13 @@ function _alspgrad_updateh!(X,                      # size (p, n)
                     end
                 else
                     if suff_decr
-                        copy!(Hp, Hn)
-                        α /= β
+                        if α/β < αmax
+                            copy!(Hp, Hn)
+                            α /= β
+                        else
+                            copy!(H, Hn)
+                            break
+                        end
                     else
                         copy!(H, Hp)
                         break
@@ -250,7 +277,7 @@ function _alspgrad_updatew!(X,                      # size (p, n)
     t = 0
     converged = false
     to_decr = true
-    α = one(T)
+    α = one(T)/one(eltype(G))
     while !converged && t < maxiter
         t += 1
 
@@ -266,11 +293,15 @@ function _alspgrad_updatew!(X,                      # size (p, n)
             converged = true
         end
 
+        αmax = maxstep(G, W)
+        α = min(α, (β+3eps(β))*αmax)
+
         # back-tracking
         it = 0
         if !converged
             while it < traceiter
                 it += 1
+                isfinite(α) || error("α is not finite")
 
                 # projected update of W to Wn
                 @inbounds for i = 1:length(Wn)
@@ -300,8 +331,13 @@ function _alspgrad_updatew!(X,                      # size (p, n)
                     end
                 else
                     if suff_decr
-                        copy!(Wp, Wn)
-                        α /= β
+                        if α/β < αmax
+                            copy!(Wp, Wn)
+                            α /= β
+                        else
+                            copy!(W, Wn)
+                            break
+                        end
                     else
                         copy!(W, Wp)
                         break
