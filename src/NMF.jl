@@ -1,10 +1,10 @@
 module NMF
 
-	using ArrayViews
-	using MLBase
-	import Base: sum!
+    using ArrayViews
+    using MLBase
+    import Base: sum!
 
-	export nnmf
+    export nnmf
 
     include("common.jl")
     include("utils.jl")
