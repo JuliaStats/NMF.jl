@@ -2,8 +2,9 @@
 
 A Julia package for non-negative matrix factorization (NMF).
 
-[![Build Status](https://travis-ci.org/JuliaStats/NMF.jl.png?branch=master)](https://travis-ci.org/JuliaStats/NMF.jl)
-[![NMF](http://pkg.julialang.org/badges/NMF_release.svg)](http://pkg.julialang.org/?pkg=NMF&ver=release)
+[![Build Status](https://travis-ci.org/JuliaStats/NMF.jl.svg?branch=master)](https://travis-ci.org/JuliaStats/NMF.jl)
+[![NMF](http://pkg.julialang.org/badges/NMF_0.3.svg)](http://pkg.julialang.org/?pkg=NMF&ver=0.3)
+[![NMF](http://pkg.julialang.org/badges/NMF_0.4.svg)](http://pkg.julialang.org/?pkg=NMF&ver=0.4)
 
 ---------------------------
 
