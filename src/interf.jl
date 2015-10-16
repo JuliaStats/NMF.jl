@@ -6,7 +6,7 @@ function nnmf{T}(X::AbstractMatrix{T}, k::Integer;
                  maxiter::Integer=100,
                  tol::Real=cbrt(eps(T)/100),
                  verbose::Bool=false)
-
+    
     p, n = size(X)
     k <= min(p, n) || error("The value of k should not exceed min(size(X)).")
 
@@ -18,7 +18,11 @@ function nnmf{T}(X::AbstractMatrix{T}, k::Integer;
     end
 
     # perform initialization
-    if init == :random
+    if alg == :spa
+        W, H = spa(X, k)
+    elseif init == :spa
+        W, H = spa(X, k) 
+    elseif init == :random
         W, H = randinit(X, k; zeroh=!initH, normalize=true)
     elseif init == :nndsvd
         W, H = nndsvd(X, k; zeroh=!initH)
@@ -36,6 +40,7 @@ function nnmf{T}(X::AbstractMatrix{T}, k::Integer;
         alg == :alspgrad ? ALSPGrad{T}(maxiter=maxiter, tol=tol, verbose=verbose) :
         alg == :multmse ? MultUpdate{T}(obj=:mse, maxiter=maxiter, tol=tol, verbose=verbose) :
         alg == :multdiv ? MultUpdate{T}(obj=:div, maxiter=maxiter, tol=tol, verbose=verbose) :
+        alg == :spa ? SPA{T}(obj=:mse) :
         error("Invalid algorithm.")
 
     # run optimization
