@@ -1,3 +1,4 @@
 julia 0.3-
 MLBase 0.3-
 ArrayViews 0.4.8-
+NonNegLeastSquares
