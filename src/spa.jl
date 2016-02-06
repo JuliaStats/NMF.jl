@@ -13,7 +13,7 @@ end
 # initialization
 function spa(
 	X::Matrix,
-	k::Int;
+	k::Integer;
 	nnls_alg = (:pivot,:cache)
 	)
 
@@ -22,7 +22,7 @@ function spa(
 
 	# W = R[:,ai], where ai are the "anchor indices"
 	# (ai forms the convex hull of columns in R)
-	ai = (Int64)[]
+	ai = (Int)[]
 
 	# Add columns of X that are furthest from span(W)
 	for j = 1:k
@@ -30,8 +30,8 @@ function spa(
 		push!(ai, indmax(sum(R.^2,1)))
 
 		# Project R onto the selected column
-		p = R[:,ai[1]]         # column we're projecting on
-		R -= R*(p*p')./(p'*p)  # new residual matrix
+		p = R[:,ai[1]]              # column we're projecting on
+		R -= p*(p'*R)./(norm(p)^2)  # new residual matrix
 	end
 
 	# Estimate W as the anchor columns of X

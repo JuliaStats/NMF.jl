@@ -6,7 +6,6 @@ function nnmf{T}(X::AbstractMatrix{T}, k::Integer;
                  maxiter::Integer=100,
                  tol::Real=cbrt(eps(T)/100),
                  verbose::Bool=false)
-    
     p, n = size(X)
     k <= min(p, n) || error("The value of k should not exceed min(size(X)).")
 
