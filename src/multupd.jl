@@ -1,8 +1,8 @@
 #
 # Multiplicative updating algorithm
 #
-# Reference: 
-#   Daniel D. Lee and H. Sebastian Seung. Algorithms for Non-negative 
+# Reference:
+#   Daniel D. Lee and H. Sebastian Seung. Algorithms for Non-negative
 #   Matrix Factorization. Advances in NIPS, 2001.
 #
 
@@ -14,21 +14,17 @@ type MultUpdate{T}
     lambda::T           # regularization coefficient
 
     function MultUpdate(;obj::Symbol=:mse,
-                         maxiter::Integer=100, 
+                         maxiter::Integer=100,
                          verbose::Bool=false,
                          tol::Real=cbrt(eps(T)),
                          lambda::Real=sqrt(eps(T)))
 
-        obj == :mse || obj == :div || error("Invalid value for obj.")
-        maxiter > 1 || error("maxiter must be greater than 1.")
-        tol > 0 || error("tol must be positive.")
-        lambda >= 0 || error("lambda must be non-negative.")
+        obj == :mse || obj == :div || throw(ArgumentError("Invalid value for obj."))
+        maxiter > 1 || throw(ArgumentError("maxiter must be greater than 1."))
+        tol > 0 || throw(ArgumentError("tol must be positive."))
+        lambda >= 0 || throw(ArgumentError("lambda must be non-negative."))
 
-        new(obj, 
-            maxiter,
-            verbose, 
-            tol,
-            lambda)
+        new(obj, maxiter, verbose, tol, lambda)
     end
 end
 
@@ -56,21 +52,18 @@ immutable MultUpdMSE_State{T}
 
     function MultUpdMSE_State(X, W::Matrix{T}, H::Matrix{T})
         p, n, k = nmf_checksize(X, W, H)
-        new(W * H, 
-            Array(T, k, n),
-            Array(T, k, n),
-            Array(T, p, k),
-            Array(T, p, k))
+        @compat new(W * H,
+                    Array{T,2}(k, n),
+                    Array{T,2}(k, n),
+                    Array{T,2}(p, k),
+                    Array{T,2}(p, k))
     end
 end
 
 prepare_state{T}(::MultUpdMSE{T}, X, W, H) = MultUpdMSE_State{T}(X, W, H)
 evaluate_objv(::MultUpdMSE, s::MultUpdMSE_State, X, W, H) = sqL2dist(X, s.WH)
 
-function update_wh!{T}(upd::MultUpdMSE{T}, s::MultUpdMSE_State{T},
-                       X,
-                       W::Matrix{T},
-                       H::Matrix{T})
+function update_wh!{T}(upd::MultUpdMSE{T}, s::MultUpdMSE_State{T}, X, W::Matrix{T}, H::Matrix{T})
 
     # fields
     lambda = upd.lambda
@@ -84,7 +77,7 @@ function update_wh!{T}(upd::MultUpdMSE{T}, s::MultUpdMSE_State{T},
     At_mul_B!(WtX, W, X)
     At_mul_B!(WtWH, W, WH)
 
-    for i = 1:length(H)
+    @inbounds for i = 1:length(H)
         H[i] *= (WtX[i] / (WtWH[i] + lambda))
     end
     A_mul_B!(WH, W, H)
@@ -93,7 +86,7 @@ function update_wh!{T}(upd::MultUpdMSE{T}, s::MultUpdMSE_State{T},
     A_mul_Bt!(XHt, X, H)
     A_mul_Bt!(WHHt, WH, H)
 
-    for i = 1:length(W)
+    @inbounds for i = 1:length(W)
         W[i] *= (XHt[i] / (WHHt[i] + lambda))
     end
     A_mul_B!(WH, W, H)
@@ -116,22 +109,19 @@ immutable MultUpdDiv_State{T}
 
     function MultUpdDiv_State(X, W::Matrix{T}, H::Matrix{T})
         p, n, k = nmf_checksize(X, W, H)
-        new(W * H, 
-            Array(T, 1, k),
-            Array(T, k, 1),
-            Array(T, p, n),
-            Array(T, k, n),
-            Array(T, p, k))
+        @compat new(W * H,
+                    Array{T,2}(1, k),
+                    Array{T,2}(k, 1),
+                    Array{T,2}(p, n),
+                    Array{T,2}(k, n),
+                    Array{T,2}(p, k))
     end
 end
 
 prepare_state{T}(::MultUpdDiv{T}, X, W, H) = MultUpdDiv_State{T}(X, W, H)
 evaluate_objv(::MultUpdDiv, s::MultUpdDiv_State, X, W, H) = gkldiv(X, s.WH)
 
-function update_wh!{T}(upd::MultUpdDiv{T}, s::MultUpdDiv_State{T},
-                       X,
-                       W::Matrix{T},
-                       H::Matrix{T})
+function update_wh!{T}(upd::MultUpdDiv{T}, s::MultUpdDiv_State{T}, X, W::Matrix{T}, H::Matrix{T})
 
     p = size(X, 1)
     n = size(X, 2)
@@ -150,25 +140,24 @@ function update_wh!{T}(upd::MultUpdDiv{T}, s::MultUpdDiv_State{T},
     @assert size(Q) == size(X)
 
     # update H
-    for i = 1:length(X)
+    @inbounds for i = 1:length(X)
         Q[i] = X[i] / (WH[i] + lambda)
     end
     At_mul_B!(WtQ, W, Q)
     sum!(fill!(sW, 0), W)
-    for j = 1:n, i = 1:k
+    @inbounds for j = 1:n, i = 1:k
         H[i,j] *= (WtQ[i,j] / sW[i])
     end
     A_mul_B!(WH, W, H)
 
     # update W
-    for i = 1:length(X)
+    @inbounds for i = 1:length(X)
         Q[i] = X[i] / (WH[i] + lambda)
     end
     A_mul_Bt!(QHt, Q, H)
     sum!(fill!(sH, 0), H)
-    for j = 1:k, i = 1:p
+    @inbounds for j = 1:k, i = 1:p
         W[i,j] *= (QHt[i,j] / sH[j])
     end
     A_mul_B!(WH, W, H)
 end
-

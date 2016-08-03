@@ -1,8 +1,5 @@
 # Test internal utilities functions
 
-import NMF
-using Base.Test
-
 make_pdmat(n::Int) = (g = randn(n, n); NMF.adddiag!(g'g, 0.1))
 
 ## adddiag!

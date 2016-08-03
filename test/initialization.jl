@@ -1,8 +1,5 @@
 # test initilization functions
 
-import NMF
-using Base.Test
-
 X = rand(8, 12)
 
 # randinit

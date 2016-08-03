@@ -21,12 +21,8 @@ end
 # ----------
 #   C. Boutsidis, and E. Gallopoulos. SVD based initialization: A head
 #   start for nonnegative matrix factorization. Pattern Recognition, 2007.
-#  
-function _nndsvd!(X,
-                  W,
-                  Ht,
-                  inith::Bool, 
-                  variant::Int)
+#
+function _nndsvd!(X, W, Ht, inith::Bool, variant::Int)
 
     p, n = size(X)
     k = size(W, 2)
@@ -60,7 +56,7 @@ function _nndsvd!(X,
                 ss = sqrt(s[j] * mn)
                 scaleneg!(view(W,:,j), x, 1 / xnnrm, vj)
                 scaleneg!(view(Ht,:,j), y, s[j] * mn / ynnrm, vj)
-            end            
+            end
         else
             if mp >= mn
                 scalepos!(view(W,:,j), x, 1 / xpnrm, vj)
@@ -71,25 +67,23 @@ function _nndsvd!(X,
     end
 end
 
-function nndsvd(X, k::Integer;
-                zeroh::Bool=false, 
-                variant::Symbol=:std)
+function nndsvd(X, k::Integer; zeroh::Bool=false, variant::Symbol=:std)
 
     p, n = size(X)
     T = eltype(X)
     ivar = variant == :std ? 0 :
            variant == :a   ? 1 :
            variant == :ar  ? 2 :
-           error("Invalid value for variant")
+           throw(ArgumentError("Invalid value for variant"))
 
-    W = Array(T, p, k)
-    H = Array(T, k, n)
+    W = @compat Array{T,2}(p, k)
+    H = @compat Array{T,2}(k, n)
     if zeroh
-        Ht = contiguous_view(H, (n, k))
+        Ht = view(H, 1:n, 1:k)
         _nndsvd!(X, W, Ht, false, ivar)
         fill!(H, 0)
     else
-        Ht = Array(T, n, k)
+        Ht = @compat Array{T,2}(n, k)
         _nndsvd!(X, W, Ht, true, ivar)
         for j = 1:k
             for i = 1:n
@@ -135,4 +129,3 @@ function scaleneg!{T<:Number}(y, x, c::T, v0::T)
         end
     end
 end
-
