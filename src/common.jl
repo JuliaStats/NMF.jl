@@ -44,8 +44,8 @@ function nmf_skeleton!{T}(updater::NMFUpdater{T},
 
     # init
     state = prepare_state(updater, X, W, H)
-    preW = @compat Array{T,2}(size(W))
-    preH = @compat Array{T,2}(size(H))
+    preW = @compat Array{T,2}(size(W)...)
+    preH = @compat Array{T,2}(size(H)...)
     if verbose
         objv = evaluate_objv(updater, state, X, W, H)
         @printf("%-5s     %-13s    %-13s    %-13s\n", "Iter", "objv", "objv.change", "(W & H).change")
