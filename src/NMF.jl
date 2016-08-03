@@ -1,5 +1,6 @@
 module NMF
-    using Compat: view
+    using Compat
+    import Compat: view
     import Base: sum!
 
     export nnmf
