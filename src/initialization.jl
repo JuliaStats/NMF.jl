@@ -79,7 +79,7 @@ function nndsvd(X, k::Integer; zeroh::Bool=false, variant::Symbol=:std)
     W = @compat Array{T,2}(p, k)
     H = @compat Array{T,2}(k, n)
     if zeroh
-        Ht = view(H, 1:n, 1:k)
+        Ht = reshape(view(H,:,:), (n, k))
         _nndsvd!(X, W, Ht, false, ivar)
         fill!(H, 0)
     else
