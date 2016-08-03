@@ -1,5 +1,7 @@
 module NMF
     using Compat
+    using StatsBase: maxad
+
     import Compat: view
     import Base: sum!
 
