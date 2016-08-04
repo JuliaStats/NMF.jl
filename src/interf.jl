@@ -8,14 +8,10 @@ function nnmf{T}(X::AbstractMatrix{T}, k::Integer;
                  verbose::Bool=false)
 
     p, n = size(X)
-    k <= min(p, n) || error("The value of k should not exceed min(size(X)).")
+    k <= min(p, n) || throw(ArgumentError("The value of k should not exceed min(size(X))."))
 
     # determine whether H needs to be initialized
-    if alg == :projals 
-        initH = false
-    else
-        initH = true
-    end
+    initH = alg == :projals
 
     # perform initialization
     if init == :random
@@ -27,18 +23,22 @@ function nnmf{T}(X::AbstractMatrix{T}, k::Integer;
     elseif init == :nndsvdar
         W, H = nndsvd(X, k; variant=:ar, zeroh=!initH)
     else
-        error("Invalid value for init.")
+        throw(ArgumentError("Invalid value for init."))
     end
 
     # choose algorithm
-    alginst = 
-        alg == :projals ? ProjectedALS{T}(maxiter=maxiter, tol=tol, verbose=verbose) :
-        alg == :alspgrad ? ALSPGrad{T}(maxiter=maxiter, tol=tol, verbose=verbose) :
-        alg == :multmse ? MultUpdate{T}(obj=:mse, maxiter=maxiter, tol=tol, verbose=verbose) :
-        alg == :multdiv ? MultUpdate{T}(obj=:div, maxiter=maxiter, tol=tol, verbose=verbose) :
-        error("Invalid algorithm.")
+    if alg == :projals
+        alginst = ProjectedALS{T}(maxiter=maxiter, tol=tol, verbose=verbose)
+    elseif alg == :alspgrad
+        alginst = ALSPGrad{T}(maxiter=maxiter, tol=tol, verbose=verbose)
+    elseif alg == :multmse
+        alginst = MultUpdate{T}(obj=:mse, maxiter=maxiter, tol=tol, verbose=verbose)
+    elseif alg == :multdiv
+        alginst = MultUpdate{T}(obj=:div, maxiter=maxiter, tol=tol, verbose=verbose)
+    else
+        throw(ArgumentError("Invalid algorithm."))
+    end
 
     # run optimization
     solve!(alginst, X, W, H)
 end
-

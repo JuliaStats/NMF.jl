@@ -4,7 +4,7 @@ import Base.BLAS: nrm2
 import Base.LAPACK: potrf!, potri!, potrs!
 
 function printf_mat(x::AbstractMatrix)
-    for i = 1:size(x,1)
+    @inbounds for i = 1:size(x,1)
         for j = 1:size(x,2)
             @printf("%8.4f ", x[i,j])
         end

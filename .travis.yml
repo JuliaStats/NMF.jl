@@ -1,17 +1,17 @@
-language: cpp
-compiler:
-  - clang
+# Documentation: http://docs.travis-ci.com/user/languages/julia/
+language: julia
+os:
+  - linux
+julia:
+  - 0.3
+  - 0.4
+  - 0.5
+  - nightly
 notifications:
   email: false
-env:
-  matrix: 
-    - JULIAVERSION="juliareleases" 
-    - JULIAVERSION="julianightlies" 
-before_install:
-  - sudo add-apt-repository ppa:staticfloat/julia-deps -y
-  - sudo add-apt-repository ppa:staticfloat/${JULIAVERSION} -y
-  - sudo apt-get update -qq -y
-  - sudo apt-get install libpcre3-dev julia -y
-script:
-  - julia -e 'Pkg.init(); run(`ln -s $(pwd()) $(Pkg.dir("NMF"))`); Pkg.pin("NMF"); Pkg.resolve()'
-  - julia ./runtests.jl
+# uncomment the following lines to override the default test script
+#script:
+#  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
+#  - julia -e 'Pkg.clone(pwd()); Pkg.build("NMF"); Pkg.test("NMF"; coverage=true)'
+after_success:
+  - julia -e 'cd(Pkg.dir("NMF")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())';

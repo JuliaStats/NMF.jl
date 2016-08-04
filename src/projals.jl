@@ -2,13 +2,13 @@
 #
 #  Solve the following problem via alternate updating:
 #
-#     (1/2) * ||X - WH||^2 
+#     (1/2) * ||X - WH||^2
 #   + (lambda_w/2) * ||W||^2
 #   + (lambda_h/2) * ||H||^2
 #
 #  At each iteration, the algorithm updates H and W, holding
 #  the other fixed. Particularly, it obtains H and W by solving
-#  an unconstrained least square problem and then casting 
+#  an unconstrained least square problem and then casting
 #  negative entries back to zeros.
 #
 
@@ -28,16 +28,12 @@ type ProjectedALS{T}
                            lambda_w::Real=cbrt(eps(T)),
                            lambda_h::Real=cbrt(eps(T)))
 
-        new(maxiter,
-            verbose,
-            tol,
-            lambda_w,
-            lambda_h)
+        new(maxiter, verbose, tol, lambda_w, lambda_h)
     end
 end
 
 solve!(alg::ProjectedALS, X, W, H) =
-    nmf_skeleton!(ProjectedALSUpd(alg.lambda_w, alg.lambda_h), 
+    nmf_skeleton!(ProjectedALSUpd(alg.lambda_w, alg.lambda_h),
                   X, W, H, alg.maxiter, alg.verbose, alg.tol)
 
 
@@ -54,10 +50,10 @@ immutable ProjectedALSUpd_State{T}
 
     function ProjectedALSUpd_State(X, W::Matrix{T}, H::Matrix{T})
         p, n, k = nmf_checksize(X, W, H)
-        new(W * H, 
-            Array(T, k, k),
-            Array(T, k, k),
-            Array(T, p, k))
+        @compat new(W * H,
+                    Array{T,2}(k, k),
+                    Array{T,2}(k, k),
+                    Array{T,2}(p, k))
     end
 end
 
@@ -91,7 +87,7 @@ function update_wh!{T}(upd::ProjectedALSUpd{T}, s::ProjectedALSUpd_State{T},
     adddiag!(At_mul_B!(WtW, W, W), lambda_h)
     At_mul_B!(H, W, X)   # H <- W'X
     pdsolve!(WtW, H)     # H <- inv(WtW) * H
-    projectnn!(H) 
+    projectnn!(H)
 
     # update W
     adddiag!(A_mul_Bt!(HHt, H, H), lambda_w)

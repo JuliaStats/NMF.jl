@@ -2,9 +2,7 @@
 
 # tools to check size
 
-function nmf_checksize(X,
-                       W::AbstractMatrix, 
-                       H::AbstractMatrix)
+function nmf_checksize(X, W::AbstractMatrix, H::AbstractMatrix)
 
     p = size(X, 1)
     n = size(X, 2)
@@ -13,6 +11,7 @@ function nmf_checksize(X,
     if !(size(W,1) == p && size(H) == (k, n))
         throw(DimensionMismatch("Dimensions of X, W, and H are inconsistent."))
     end
+
     return (p, n, k)
 end
 
@@ -26,11 +25,10 @@ immutable Result{T}
     converged::Bool
     objvalue::T
 
-    function Result(W::Matrix{T}, H::Matrix{T},
-                       niters::Int, converged::Bool, objv)
-
-        size(W, 2) == size(H, 1) || 
+    function Result(W::Matrix{T}, H::Matrix{T}, niters::Int, converged::Bool, objv)
+        if size(W, 2) != size(H, 1)
             throw(DimensionMismatch("Inner dimensions of W and H mismatch."))
+        end
         new(W, H, niters, converged, objv)
     end
 end
@@ -46,8 +44,8 @@ function nmf_skeleton!{T}(updater::NMFUpdater{T},
 
     # init
     state = prepare_state(updater, X, W, H)
-    preW = Array(T, size(W))
-    preH = Array(T, size(H))
+    preW = @compat Array{T,2}(size(W)...)
+    preH = @compat Array{T,2}(size(H)...)
     if verbose
         objv = evaluate_objv(updater, state, X, W, H)
         @printf("%-5s     %-13s    %-13s    %-13s\n", "Iter", "objv", "objv.change", "(W & H).change")
@@ -75,7 +73,7 @@ function nmf_skeleton!{T}(updater::NMFUpdater{T},
         if verbose
             preobjv = objv
             objv = evaluate_objv(updater, state, X, W, H)
-            @printf("%5d    %13.6e    %13.6e    %13.6e\n", 
+            @printf("%5d    %13.6e    %13.6e    %13.6e\n",
                 t, objv, objv - preobjv, dev)
         end
     end
@@ -85,5 +83,3 @@ function nmf_skeleton!{T}(updater::NMFUpdater{T},
     end
     return Result{T}(W, H, t, converged, objv)
 end
-
-

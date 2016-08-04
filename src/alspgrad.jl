@@ -8,7 +8,7 @@
 
 function projgradnorm(g, x)
     T = eltype(g)
-    v = convert(T, 0.0)
+    v = zero(T)
     @inbounds for i = 1:length(g)
         gi = g[i]
         if gi < zero(T) || x[i] > zero(T)
@@ -22,18 +22,18 @@ end
 # all elements of A becoming zero
 # The new value of A would be A = A - α*G
 function maxstep(G, A)
-    T = typeof(one(eltype(A))/one(eltype(G)))
+    T = typeof(one(eltype(A)) / one(eltype(G)))
     αmax = zero(T)
     for i = 1:length(G)
         g = G[i]
         if g >= 0
-            αmax = max(αmax, A[i]/g)
+            αmax = max(αmax, A[i] / g)
         else
             αmax = convert(T, Inf)
             break
         end
     end
-    αmax
+    return αmax
 end
 
 ## sub-routines for updating H
@@ -49,13 +49,13 @@ immutable ALSGradUpdH_State{T}
 
     function ALSGradUpdH_State(X, W, H)
         k, n = size(H)
-        new(Array(T, k, n),
-            Array(T, k, n),
-            Array(T, k, n),
-            Array(T, k, n),
-            Array(T, k, k),
-            Array(T, k, n),
-            Array(T, k, n))
+        @compat new(Array{T,2}(k, n),
+                    Array{T,2}(k, n),
+                    Array{T,2}(k, n),
+                    Array{T,2}(k, n),
+                    Array{T,2}(k, k),
+                    Array{T,2}(k, n),
+                    Array{T,2}(k, n))
     end
 end
 ALSGradUpdH_State{T}(X, W::VecOrMat{T}, H::VecOrMat{T}) = ALSGradUpdH_State{T}(X, W, H)
@@ -77,8 +77,8 @@ function alspgrad_updateh!{T}(X,
 
     s = ALSGradUpdH_State(X, W, H)
     set_w!(s, X, W)
-    _alspgrad_updateh!(X, W, H, s, 
-                       maxiter, traceiter, tolg, 
+    _alspgrad_updateh!(X, W, H, s,
+                       maxiter, traceiter, tolg,
                        beta, sigma, verbose)
 end
 
@@ -103,8 +103,8 @@ function _alspgrad_updateh!(X,                      # size (p, n)
     T = eltype(H)
 
     # banner
-    if verbose       
-        @printf("%5s    %12s    %12s    %12s    %8s    %12s\n", 
+    if verbose
+        @printf("%5s    %12s    %12s    %12s    %8s    %12s\n",
             "Iter", "objv", "objv.change", "1st-ord", "alpha", "back-tracks")
         WH = W * H
         objv = sqL2dist(X, WH)
@@ -115,7 +115,7 @@ function _alspgrad_updateh!(X,                      # size (p, n)
     t = 0
     converged = false
     to_decr = true
-    α = one(T)/one(eltype(G))
+    α = one(T) / one(eltype(G))
     while !converged && t < maxiter
         t += 1
 
@@ -152,7 +152,7 @@ function _alspgrad_updateh!(X,                      # size (p, n)
                 dv1 = BLAS.dot(G, D)  # <G, D>
                 A_mul_B!(WtWD, WtW, D)
                 dv2 = BLAS.dot(WtWD, D)  # <D, WtW * D>
-                
+
                 # back-track
                 suff_decr = ((1 - σ) * dv1 + convert(T, 0.5) * dv2) < 0
 
@@ -189,7 +189,7 @@ function _alspgrad_updateh!(X,                      # size (p, n)
             A_mul_B!(WH, W, H)
             preobjv = objv
             objv = sqL2dist(X, WH)
-            @printf("%5d    %12.5e    %12.5e    %12.5e    %8.4f    %12d\n", 
+            @printf("%5d    %12.5e    %12.5e    %12.5e    %8.4f    %12d\n",
                 t, objv, objv - preobjv, pgnrm, α, it)
         end
     end
@@ -210,13 +210,13 @@ immutable ALSGradUpdW_State{T}
 
     function ALSGradUpdW_State(X, W, H)
         p, k = size(W)
-        new(Array(T, p, k),
-            Array(T, p, k),
-            Array(T, p, k),
-            Array(T, p, k),
-            Array(T, k, k),
-            Array(T, p, k),
-            Array(T, p, k))
+        @compat new(Array{T,2}(p, k),
+                    Array{T,2}(p, k),
+                    Array{T,2}(p, k),
+                    Array{T,2}(p, k),
+                    Array{T,2}(k, k),
+                    Array{T,2}(p, k),
+                    Array{T,2}(p, k))
     end
 end
 ALSGradUpdW_State{T}(X, W::VecOrMat{T}, H::VecOrMat{T}) = ALSGradUpdW_State{T}(X, W, H)
@@ -239,8 +239,8 @@ function alspgrad_updatew!{T}(X,
 
     s = ALSGradUpdW_State(X, W, H)
     set_h!(s, X, H)
-    _alspgrad_updatew!(X, W, H, s, 
-                       maxiter, traceiter, tolg, 
+    _alspgrad_updatew!(X, W, H, s,
+                       maxiter, traceiter, tolg,
                        beta, sigma, verbose)
 end
 
@@ -265,8 +265,8 @@ function _alspgrad_updatew!(X,                      # size (p, n)
     T = eltype(W)
 
     # banner
-    if verbose       
-        @printf("%5s    %12s    %12s    %12s    %8s    %12s\n", 
+    if verbose
+        @printf("%5s    %12s    %12s    %12s    %8s    %12s\n",
             "Iter", "objv", "objv.change", "1st-ord", "alpha", "back-tracks")
         WH = W * H
         objv = sqL2dist(X, WH)
@@ -277,7 +277,7 @@ function _alspgrad_updatew!(X,                      # size (p, n)
     t = 0
     converged = false
     to_decr = true
-    α = one(T)/one(eltype(G))
+    α = one(T) / one(eltype(G))
     while !converged && t < maxiter
         t += 1
 
@@ -314,7 +314,7 @@ function _alspgrad_updatew!(X,                      # size (p, n)
                 dv1 = BLAS.dot(G, D)  # <G, D>
                 A_mul_B!(DHHt, D, HHt)
                 dv2 = BLAS.dot(DHHt, D)  # <D * HHt, D>
-                
+
                 # back-track
                 suff_decr = ((1 - σ) * dv1 + convert(T, 0.5) * dv2) < 0
 
@@ -351,7 +351,7 @@ function _alspgrad_updatew!(X,                      # size (p, n)
             A_mul_B!(WH, W, H)
             preobjv = objv
             objv = sqL2dist(X, WH)
-            @printf("%5d    %12.5e    %12.5e    %12.5e    %8.4f    %12d\n", 
+            @printf("%5d    %12.5e    %12.5e    %12.5e    %8.4f    %12d\n",
                 t, objv, objv - preobjv, pgnrm, α, it)
         end
     end
@@ -368,7 +368,7 @@ type ALSPGrad{T}
     tolg::T     # tolerance of grad norm in sub-routine
     verbose::Bool     # whether to show procedural information (main)
 
-    function ALSPGrad(;maxiter::Integer=100, 
+    function ALSPGrad(;maxiter::Integer=100,
                        maxsubiter::Integer=200,
                        tol::Real=cbrt(eps(T)),
                        tolg::Real=eps(T)^(1/4),
@@ -387,7 +387,7 @@ immutable ALSPGradUpd{T} <: NMFUpdater{T}
 end
 
 solve!(alg::ALSPGrad, X, W, H) =
-    nmf_skeleton!(ALSPGradUpd(alg.maxsubiter, alg.tolg), 
+    nmf_skeleton!(ALSPGradUpd(alg.maxsubiter, alg.tolg),
                   X, W, H, alg.maxiter, alg.verbose, alg.tol)
 
 
@@ -397,8 +397,8 @@ immutable ALSPGradUpd_State{T}
     uwstate::ALSGradUpdW_State
 
     ALSPGradUpd_State(X, W, H) =
-        new(W * H, 
-            ALSGradUpdH_State(X, W, H), 
+        new(W * H,
+            ALSGradUpdH_State(X, W, H),
             ALSGradUpdW_State(X, W, H))
 end
 
@@ -410,15 +410,15 @@ function update_wh!(upd::ALSPGradUpd, s::ALSPGradUpd_State, X, W, H)
 
     # update H
     set_w!(s.uhstate, X, W)
-    _alspgrad_updateh!(X, W, H, s.uhstate, 
+    _alspgrad_updateh!(X, W, H, s.uhstate,
         upd.maxsubiter, 20, upd.tolg, convert(T, 0.2), convert(T, 0.01), false)
 
     # update W
     set_h!(s.uwstate, X, H)
-    _alspgrad_updatew!(X, W, H, s.uwstate, 
+    _alspgrad_updatew!(X, W, H, s.uwstate,
         upd.maxsubiter, 20, upd.tolg, convert(T, 0.2), convert(T, 0.01), false)
 
     # update WH
-    A_mul_B!(s.WH, W, H) 
+    A_mul_B!(s.WH, W, H)
 end
 

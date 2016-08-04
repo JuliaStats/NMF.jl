@@ -1,6 +1,3 @@
-import NMF
-using Base.Test
-
 srand(5678)
 
 p = 5

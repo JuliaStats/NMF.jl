@@ -1,8 +1,5 @@
 # some tests for ALSPGrad
 
-import NMF
-using Base.Test
-
 # data
 
 srand(5678)
