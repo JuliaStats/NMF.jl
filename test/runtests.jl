@@ -3,7 +3,8 @@ using Base.Test
 
 tests = ["utils",
          "initialization",
-         "alspgrad"]
+         "alspgrad",
+	 "spa"]
 
 println("Running tests:")
 for t in tests

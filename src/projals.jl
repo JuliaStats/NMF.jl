@@ -22,11 +22,11 @@ type ProjectedALS{T}
     lambda_w::T
     lambda_h::T
 
-    function ProjectedALS(;maxiter::Integer=100,
+    function ProjectedALS{T}(;maxiter::Integer=100,
                            verbose::Bool=false,
                            tol::Real=cbrt(eps(T)),
                            lambda_w::Real=cbrt(eps(T)),
-                           lambda_h::Real=cbrt(eps(T)))
+                           lambda_h::Real=cbrt(eps(T))) where T <: Real
 
         new(maxiter, verbose, tol, lambda_w, lambda_h)
     end
@@ -48,7 +48,7 @@ immutable ProjectedALSUpd_State{T}
     HHt::Matrix{T}
     XHt::Matrix{T}
 
-    function ProjectedALSUpd_State(X, W::Matrix{T}, H::Matrix{T})
+    function ProjectedALSUpd_State{T}(X, W::Matrix{T}, H::Matrix{T}) where T <:Real
         p, n, k = nmf_checksize(X, W, H)
         @compat new(W * H,
                     Array{T,2}(k, k),

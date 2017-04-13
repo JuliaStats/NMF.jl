@@ -47,7 +47,7 @@ immutable ALSGradUpdH_State{T}
     WtX::Matrix{T}    # W'X  (pre-computed)
     WtWD::Matrix{T}   # W'W * D
 
-    function ALSGradUpdH_State(X, W, H)
+    function ALSGradUpdH_State{T}(X, W, H) where T <: Real
         k, n = size(H)
         @compat new(Array{T,2}(k, n),
                     Array{T,2}(k, n),
@@ -65,7 +65,7 @@ function set_w!(s::ALSGradUpdH_State, X, W)
     At_mul_B!(s.WtX, W, X)
 end
 
-function alspgrad_updateh!{T}(X,
+function alspgrad_updateh!{T <: Real}(X,
                               W::VecOrMat{T},
                               H::VecOrMat{T};
                               maxiter::Int = 1000,
@@ -208,7 +208,7 @@ immutable ALSGradUpdW_State{T}
     XHt::Matrix{T}    # XH' (pre-computed)
     DHHt::Matrix{T}   # D * HH'
 
-    function ALSGradUpdW_State(X, W, H)
+    function ALSGradUpdW_State{T}(X, W, H) where T <: Real
         p, k = size(W)
         @compat new(Array{T,2}(p, k),
                     Array{T,2}(p, k),
@@ -368,11 +368,11 @@ type ALSPGrad{T}
     tolg::T     # tolerance of grad norm in sub-routine
     verbose::Bool     # whether to show procedural information (main)
 
-    function ALSPGrad(;maxiter::Integer=100,
+    function ALSPGrad{T}(;maxiter::Integer=100,
                        maxsubiter::Integer=200,
                        tol::Real=cbrt(eps(T)),
                        tolg::Real=eps(T)^(1/4),
-                       verbose::Bool=false)
+                       verbose::Bool=false) where T <: Real
         new(maxiter,
             maxsubiter,
             tol,
@@ -396,7 +396,7 @@ immutable ALSPGradUpd_State{T}
     uhstate::ALSGradUpdH_State
     uwstate::ALSGradUpdW_State
 
-    ALSPGradUpd_State(X, W, H) =
+    ALSPGradUpd_State{T}(X, W, H) where T <: Real =
         new(W * H,
             ALSGradUpdH_State(X, W, H),
             ALSGradUpdW_State(X, W, H))

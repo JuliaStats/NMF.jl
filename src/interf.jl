@@ -22,6 +22,8 @@ function nnmf{T}(X::AbstractMatrix{T}, k::Integer;
         W, H = nndsvd(X, k; variant=:a, zeroh=!initH)
     elseif init == :nndsvdar
         W, H = nndsvd(X, k; variant=:ar, zeroh=!initH)
+    elseif init == :spa
+        W, H = spa(X, k)
     else
         throw(ArgumentError("Invalid value for init."))
     end
@@ -35,6 +37,8 @@ function nnmf{T}(X::AbstractMatrix{T}, k::Integer;
         alginst = MultUpdate{T}(obj=:mse, maxiter=maxiter, tol=tol, verbose=verbose)
     elseif alg == :multdiv
         alginst = MultUpdate{T}(obj=:div, maxiter=maxiter, tol=tol, verbose=verbose)
+    elseif alg == :spa
+        alginst = SPA{T}(obj=:mse)
     else
         throw(ArgumentError("Invalid algorithm."))
     end

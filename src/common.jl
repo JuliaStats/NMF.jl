@@ -18,14 +18,14 @@ end
 
 # the result type
 
-immutable Result{T}
+immutable Result{T} <: Real
     W::Matrix{T}
     H::Matrix{T}
     niters::Int
     converged::Bool
     objvalue::T
 
-    function Result(W::Matrix{T}, H::Matrix{T}, niters::Int, converged::Bool, objv)
+    function Result{T}(W::Matrix{T}, H::Matrix{T}, niters::Int, converged::Bool, objv) where T <: Real
         if size(W, 2) != size(H, 1)
             throw(DimensionMismatch("Inner dimensions of W and H mismatch."))
         end
@@ -35,7 +35,7 @@ end
 
 # common algorithmic skeleton for iterative updating methods
 
-abstract NMFUpdater{T}
+abstract type NMFUpdater{T} end
 
 function nmf_skeleton!{T}(updater::NMFUpdater{T},
                           X, W::Matrix{T}, H::Matrix{T},

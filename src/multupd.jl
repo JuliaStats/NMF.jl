@@ -6,18 +6,18 @@
 #   Matrix Factorization. Advances in NIPS, 2001.
 #
 
-type MultUpdate{T}
+type MultUpdate{T} <: Real
     obj::Symbol         # objective :mse or :div
     maxiter::Int        # maximum number of iterations
     verbose::Bool       # whether to show procedural information
     tol::T              # change tolerance upon convergence
     lambda::T           # regularization coefficient
 
-    function MultUpdate(;obj::Symbol=:mse,
+    function MultUpdate{T}(;obj::Symbol=:mse,
                          maxiter::Integer=100,
                          verbose::Bool=false,
                          tol::Real=cbrt(eps(T)),
-                         lambda::Real=sqrt(eps(T)))
+                         lambda::Real=sqrt(eps(T))) where T <: Real
 
         obj == :mse || obj == :div || throw(ArgumentError("Invalid value for obj."))
         maxiter > 1 || throw(ArgumentError("maxiter must be greater than 1."))
@@ -43,14 +43,14 @@ immutable MultUpdMSE{T} <: NMFUpdater{T}
     lambda::T
 end
 
-immutable MultUpdMSE_State{T}
+immutable MultUpdMSE_State{T} 
     WH::Matrix{T}
     WtX::Matrix{T}
     WtWH::Matrix{T}
     XHt::Matrix{T}
     WHHt::Matrix{T}
 
-    function MultUpdMSE_State(X, W::Matrix{T}, H::Matrix{T})
+    function MultUpdMSE_State{T}(X, W::Matrix{T}, H::Matrix{T}) where T <: Real
         p, n, k = nmf_checksize(X, W, H)
         @compat new(W * H,
                     Array{T,2}(k, n),
@@ -107,7 +107,7 @@ immutable MultUpdDiv_State{T}
     WtQ::Matrix{T}    # W' * Q: size (k, n)
     QHt::Matrix{T}    # Q * H': size (p, k)
 
-    function MultUpdDiv_State(X, W::Matrix{T}, H::Matrix{T})
+    function MultUpdDiv_State{T}(X, W::Matrix{T}, H::Matrix{T}) where T <: Real 
         p, n, k = nmf_checksize(X, W, H)
         @compat new(W * H,
                     Array{T,2}(1, k),
