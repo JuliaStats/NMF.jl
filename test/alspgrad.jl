@@ -10,8 +10,8 @@ k = 3
 
 # Matrices
 for T in (Float64, Float32)
-    Wg = max.(rand(T, p, k) .- 0.3, 0)
-    Hg = max.(rand(T, k, n) .- 0.3, 0)
+    Wg = max.(rand(T, p, k) .- T(0.3), zero(T))
+    Hg = max.(rand(T, k, n) .- T(0.3), zero(T))
     X = Wg * Hg
 
     # test update of H
