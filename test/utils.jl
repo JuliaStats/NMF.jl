@@ -17,13 +17,13 @@ NMF.adddiag!(a, 2.5)
 
 a = rand(5)
 NMF.normalize1!(a)
-@test_approx_eq sum(a) 1.0
+@test sum(a) ≈ 1.0
 
 ## normalize1_cols!
 
 a = rand(5, 6)
 NMF.normalize1_cols!(a)
-@test_approx_eq vec(sum(a,1)) ones(6)
+@test vec(sum(a,1)) ≈ ones(6)
 
 ## projectnn!
 
@@ -50,7 +50,7 @@ A = make_pdmat(5)
 X = rand(5, 3)
 Y = A * X
 NMF.pdsolve!(A, Y)
-@test_approx_eq X Y
+@test X ≈ Y
 
 ## pdrsolve!
 
@@ -59,4 +59,4 @@ X = rand(4, 5)
 Y = X * B
 Xr = zeros(4, 5)
 NMF.pdrsolve!(Y, B, Xr)
-@test_approx_eq Xr X
+@test Xr ≈ X

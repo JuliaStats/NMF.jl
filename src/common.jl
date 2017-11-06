@@ -18,7 +18,7 @@ end
 
 # the result type
 
-immutable Result{T}
+struct Result{T}
     W::Matrix{T}
     H::Matrix{T}
     niters::Int
@@ -35,11 +35,11 @@ end
 
 # common algorithmic skeleton for iterative updating methods
 
-abstract NMFUpdater{T}
+abstract type NMFUpdater{T} end
 
-function nmf_skeleton!{T}(updater::NMFUpdater{T},
-                          X, W::Matrix{T}, H::Matrix{T},
-                          maxiter::Int, verbose::Bool, tol)
+function nmf_skeleton!(updater::NMFUpdater{T},
+                       X, W::Matrix{T}, H::Matrix{T},
+                       maxiter::Int, verbose::Bool, tol) where T
     objv = convert(T, NaN)
 
     # init

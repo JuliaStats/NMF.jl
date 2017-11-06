@@ -15,7 +15,7 @@
 import Base.LinAlg: copytri!
 import Base.LAPACK: potrs!, potrf!, potri!
 
-type ProjectedALS{T}
+mutable struct ProjectedALS{T}
     maxiter::Int
     verbose::Bool
     tol::T
@@ -37,12 +37,12 @@ solve!(alg::ProjectedALS, X, W, H) =
                   X, W, H, alg.maxiter, alg.verbose, alg.tol)
 
 
-immutable ProjectedALSUpd{T} <: NMFUpdater{T}
+struct ProjectedALSUpd{T} <: NMFUpdater{T}
     lambda_w::T
     lambda_h::T
 end
 
-immutable ProjectedALSUpd_State{T}
+struct ProjectedALSUpd_State{T}
     WH::Matrix{T}
     WtW::Matrix{T}
     HHt::Matrix{T}
@@ -57,9 +57,9 @@ immutable ProjectedALSUpd_State{T}
     end
 end
 
-prepare_state{T}(::ProjectedALSUpd{T}, X, W, H) = ProjectedALSUpd_State{T}(X, W, H)
+prepare_state(::ProjectedALSUpd{T}, X, W, H) where {T} = ProjectedALSUpd_State{T}(X, W, H)
 
-function evaluate_objv{T}(u::ProjectedALSUpd{T}, s::ProjectedALSUpd_State{T}, X, W, H)
+function evaluate_objv(u::ProjectedALSUpd{T}, s::ProjectedALSUpd_State{T}, X, W, H) where T
     r = convert(T, 0.5) * sqL2dist(X, s.WH)
     if u.lambda_w > 0
         r += (convert(T, 0.5) * u.lambda_w) * abs2(vecnorm(W))
@@ -70,10 +70,10 @@ function evaluate_objv{T}(u::ProjectedALSUpd{T}, s::ProjectedALSUpd_State{T}, X,
     return r
 end
 
-function update_wh!{T}(upd::ProjectedALSUpd{T}, s::ProjectedALSUpd_State{T},
-                       X,
-                       W::Matrix{T},
-                       H::Matrix{T})
+function update_wh!(upd::ProjectedALSUpd{T}, s::ProjectedALSUpd_State{T},
+                    X,
+                    W::Matrix{T},
+                    H::Matrix{T}) where T
 
     # fields
     WH = s.WH

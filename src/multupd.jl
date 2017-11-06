@@ -6,7 +6,7 @@
 #   Matrix Factorization. Advances in NIPS, 2001.
 #
 
-type MultUpdate{T}
+mutable struct MultUpdate{T}
     obj::Symbol         # objective :mse or :div
     maxiter::Int        # maximum number of iterations
     verbose::Bool       # whether to show procedural information
@@ -39,11 +39,11 @@ end
 
 # the multiplicative updating algorithm for MSE objective
 
-immutable MultUpdMSE{T} <: NMFUpdater{T}
+struct MultUpdMSE{T} <: NMFUpdater{T}
     lambda::T
 end
 
-immutable MultUpdMSE_State{T}
+struct MultUpdMSE_State{T}
     WH::Matrix{T}
     WtX::Matrix{T}
     WtWH::Matrix{T}
@@ -60,10 +60,10 @@ immutable MultUpdMSE_State{T}
     end
 end
 
-prepare_state{T}(::MultUpdMSE{T}, X, W, H) = MultUpdMSE_State{T}(X, W, H)
+prepare_state(::MultUpdMSE{T}, X, W, H) where {T} = MultUpdMSE_State{T}(X, W, H)
 evaluate_objv(::MultUpdMSE, s::MultUpdMSE_State, X, W, H) = sqL2dist(X, s.WH)
 
-function update_wh!{T}(upd::MultUpdMSE{T}, s::MultUpdMSE_State{T}, X, W::Matrix{T}, H::Matrix{T})
+function update_wh!(upd::MultUpdMSE{T}, s::MultUpdMSE_State{T}, X, W::Matrix{T}, H::Matrix{T}) where T
 
     # fields
     lambda = upd.lambda
@@ -95,11 +95,11 @@ end
 
 # the multiplicative updating algorithm for divergence objective
 
-immutable MultUpdDiv{T} <: NMFUpdater{T}
+struct MultUpdDiv{T} <: NMFUpdater{T}
     lambda::T
 end
 
-immutable MultUpdDiv_State{T}
+struct MultUpdDiv_State{T}
     WH::Matrix{T}
     sW::Matrix{T}     # sum(W, 1)
     sH::Matrix{T}     # sum(H, 2)
@@ -118,10 +118,10 @@ immutable MultUpdDiv_State{T}
     end
 end
 
-prepare_state{T}(::MultUpdDiv{T}, X, W, H) = MultUpdDiv_State{T}(X, W, H)
+prepare_state(::MultUpdDiv{T}, X, W, H) where {T} = MultUpdDiv_State{T}(X, W, H)
 evaluate_objv(::MultUpdDiv, s::MultUpdDiv_State, X, W, H) = gkldiv(X, s.WH)
 
-function update_wh!{T}(upd::MultUpdDiv{T}, s::MultUpdDiv_State{T}, X, W::Matrix{T}, H::Matrix{T})
+function update_wh!(upd::MultUpdDiv{T}, s::MultUpdDiv_State{T}, X, W::Matrix{T}, H::Matrix{T}) where T
 
     p = size(X, 1)
     n = size(X, 2)

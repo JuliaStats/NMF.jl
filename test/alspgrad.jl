@@ -19,14 +19,14 @@ for T in (Float64, Float32)
     H = rand(T, k, n)
     NMF.alspgrad_updateh!(X, Wg, H; maxiter=200)
     @test all(H .>= 0.0)
-    @test_approx_eq_eps H Hg eps(T)^(1/4)
+    @test H ≈ Hg atol=eps(T)^(1/4)
 
     # test update of W
 
     W = rand(T, p, k)
     NMF.alspgrad_updatew!(X, W, Hg; maxiter=200)
     @test all(W .>= 0.0)
-    @test_approx_eq_eps W Wg eps(T)^(1/4)
+    @test W ≈ Wg atol=eps(T)^(1/4)
 
     NMF.solve!(NMF.ALSPGrad{T}(), X, W, H)
 end
