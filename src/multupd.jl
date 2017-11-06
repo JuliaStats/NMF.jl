@@ -13,18 +13,18 @@ mutable struct MultUpdate{T}
     tol::T              # change tolerance upon convergence
     lambda::T           # regularization coefficient
 
-    function MultUpdate(;obj::Symbol=:mse,
-                         maxiter::Integer=100,
-                         verbose::Bool=false,
-                         tol::Real=cbrt(eps(T)),
-                         lambda::Real=sqrt(eps(T)))
+    function MultUpdate{T}(;obj::Symbol=:mse,
+                            maxiter::Integer=100,
+                            verbose::Bool=false,
+                            tol::Real=cbrt(eps(T)),
+                            lambda::Real=sqrt(eps(T))) where T
 
         obj == :mse || obj == :div || throw(ArgumentError("Invalid value for obj."))
         maxiter > 1 || throw(ArgumentError("maxiter must be greater than 1."))
         tol > 0 || throw(ArgumentError("tol must be positive."))
         lambda >= 0 || throw(ArgumentError("lambda must be non-negative."))
 
-        new(obj, maxiter, verbose, tol, lambda)
+        new{T}(obj, maxiter, verbose, tol, lambda)
     end
 end
 
@@ -50,13 +50,13 @@ struct MultUpdMSE_State{T}
     XHt::Matrix{T}
     WHHt::Matrix{T}
 
-    function MultUpdMSE_State(X, W::Matrix{T}, H::Matrix{T})
+    function MultUpdMSE_State{T}(X, W::Matrix{T}, H::Matrix{T}) where T
         p, n, k = nmf_checksize(X, W, H)
-        @compat new(W * H,
-                    Array{T,2}(k, n),
-                    Array{T,2}(k, n),
-                    Array{T,2}(p, k),
-                    Array{T,2}(p, k))
+        new{T}(W * H,
+               Array{T,2}(k, n),
+               Array{T,2}(k, n),
+               Array{T,2}(p, k),
+               Array{T,2}(p, k))
     end
 end
 
@@ -107,14 +107,14 @@ struct MultUpdDiv_State{T}
     WtQ::Matrix{T}    # W' * Q: size (k, n)
     QHt::Matrix{T}    # Q * H': size (p, k)
 
-    function MultUpdDiv_State(X, W::Matrix{T}, H::Matrix{T})
+    function MultUpdDiv_State{T}(X, W::Matrix{T}, H::Matrix{T}) where T
         p, n, k = nmf_checksize(X, W, H)
-        @compat new(W * H,
-                    Array{T,2}(1, k),
-                    Array{T,2}(k, 1),
-                    Array{T,2}(p, n),
-                    Array{T,2}(k, n),
-                    Array{T,2}(p, k))
+        new{T}(W * H,
+               Array{T,2}(1, k),
+               Array{T,2}(k, 1),
+               Array{T,2}(p, n),
+               Array{T,2}(k, n),
+               Array{T,2}(p, k))
     end
 end
 

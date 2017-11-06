@@ -47,15 +47,15 @@ struct ALSGradUpdH_State{T}
     WtX::Matrix{T}    # W'X  (pre-computed)
     WtWD::Matrix{T}   # W'W * D
 
-    function ALSGradUpdH_State(X, W, H)
+    function ALSGradUpdH_State{T}(X, W, H) where T
         k, n = size(H)
-        @compat new(Array{T,2}(k, n),
-                    Array{T,2}(k, n),
-                    Array{T,2}(k, n),
-                    Array{T,2}(k, n),
-                    Array{T,2}(k, k),
-                    Array{T,2}(k, n),
-                    Array{T,2}(k, n))
+        new{T}(Array{T,2}(k, n),
+               Array{T,2}(k, n),
+               Array{T,2}(k, n),
+               Array{T,2}(k, n),
+               Array{T,2}(k, k),
+               Array{T,2}(k, n),
+               Array{T,2}(k, n))
     end
 end
 ALSGradUpdH_State(X, W::VecOrMat{T}, H::VecOrMat{T}) where {T} = ALSGradUpdH_State{T}(X, W, H)
@@ -208,15 +208,15 @@ struct ALSGradUpdW_State{T}
     XHt::Matrix{T}    # XH' (pre-computed)
     DHHt::Matrix{T}   # D * HH'
 
-    function ALSGradUpdW_State(X, W, H)
+    function ALSGradUpdW_State{T}(X, W, H) where T
         p, k = size(W)
-        @compat new(Array{T,2}(p, k),
-                    Array{T,2}(p, k),
-                    Array{T,2}(p, k),
-                    Array{T,2}(p, k),
-                    Array{T,2}(k, k),
-                    Array{T,2}(p, k),
-                    Array{T,2}(p, k))
+        new{T}(Array{T,2}(p, k),
+               Array{T,2}(p, k),
+               Array{T,2}(p, k),
+               Array{T,2}(p, k),
+               Array{T,2}(k, k),
+               Array{T,2}(p, k),
+               Array{T,2}(p, k))
     end
 end
 ALSGradUpdW_State(X, W::VecOrMat{T}, H::VecOrMat{T}) where {T} = ALSGradUpdW_State{T}(X, W, H)
@@ -368,16 +368,16 @@ mutable struct ALSPGrad{T}
     tolg::T     # tolerance of grad norm in sub-routine
     verbose::Bool     # whether to show procedural information (main)
 
-    function ALSPGrad(;maxiter::Integer=100,
-                       maxsubiter::Integer=200,
-                       tol::Real=cbrt(eps(T)),
-                       tolg::Real=eps(T)^(1/4),
-                       verbose::Bool=false)
-        new(maxiter,
-            maxsubiter,
-            tol,
-            tolg,
-            verbose)
+    function ALSPGrad{T}(;maxiter::Integer=100,
+                          maxsubiter::Integer=200,
+                          tol::Real=cbrt(eps(T)),
+                          tolg::Real=eps(T)^(1/4),
+                          verbose::Bool=false) where T
+        new{T}(maxiter,
+               maxsubiter,
+               tol,
+               tolg,
+               verbose)
     end
 end
 
@@ -396,10 +396,10 @@ struct ALSPGradUpd_State{T}
     uhstate::ALSGradUpdH_State
     uwstate::ALSGradUpdW_State
 
-    ALSPGradUpd_State(X, W, H) =
-        new(W * H,
-            ALSGradUpdH_State(X, W, H),
-            ALSGradUpdW_State(X, W, H))
+    ALSPGradUpd_State{T}(X, W, H) where {T} =
+        new{T}(W * H,
+               ALSGradUpdH_State(X, W, H),
+               ALSGradUpdW_State(X, W, H))
 end
 
 prepare_state(::ALSPGradUpd{T}, X, W, H) where {T} = ALSPGradUpd_State{T}(X, W, H)

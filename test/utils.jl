@@ -30,7 +30,7 @@ NMF.normalize1_cols!(a)
 a0 = randn(5, 5)
 a = copy(a0)
 NMF.projectnn!(a)
-@test a == max(a0, 0.0)
+@test a == max.(a0, 0.0)
 
 ## posneg!
 
@@ -41,8 +41,8 @@ an = zeros(size(a))
 
 NMF.posneg!(a, ap, an)
 @test a == ac
-@test ap == max(a, 0.0)
-@test an == max(-a, 0.0)
+@test ap == max.(a, 0.0)
+@test an == max.(-a, 0.0)
 
 ## pdsolve!
 

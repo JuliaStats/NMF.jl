@@ -22,13 +22,13 @@ mutable struct ProjectedALS{T}
     lambda_w::T
     lambda_h::T
 
-    function ProjectedALS(;maxiter::Integer=100,
-                           verbose::Bool=false,
-                           tol::Real=cbrt(eps(T)),
-                           lambda_w::Real=cbrt(eps(T)),
-                           lambda_h::Real=cbrt(eps(T)))
+    function ProjectedALS{T}(;maxiter::Integer=100,
+                              verbose::Bool=false,
+                              tol::Real=cbrt(eps(T)),
+                              lambda_w::Real=cbrt(eps(T)),
+                              lambda_h::Real=cbrt(eps(T))) where T
 
-        new(maxiter, verbose, tol, lambda_w, lambda_h)
+        new{T}(maxiter, verbose, tol, lambda_w, lambda_h)
     end
 end
 
@@ -48,12 +48,12 @@ struct ProjectedALSUpd_State{T}
     HHt::Matrix{T}
     XHt::Matrix{T}
 
-    function ProjectedALSUpd_State(X, W::Matrix{T}, H::Matrix{T})
+    function ProjectedALSUpd_State{T}(X, W::Matrix{T}, H::Matrix{T}) where T
         p, n, k = nmf_checksize(X, W, H)
-        @compat new(W * H,
-                    Array{T,2}(k, k),
-                    Array{T,2}(k, k),
-                    Array{T,2}(p, k))
+        new{T}(W * H,
+               Array{T,2}(k, k),
+               Array{T,2}(k, k),
+               Array{T,2}(p, k))
     end
 end
 
