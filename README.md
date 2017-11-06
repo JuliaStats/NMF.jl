@@ -46,7 +46,7 @@ This function factorizes the input matrix ``X`` into the product of two non-nega
 In general, it returns a result instance of type ``NMF.Result``, which is defined as
 
 ```julia
-immutable Result
+struct Result
     W::Matrix{Float64}    # W matrix
     H::Matrix{Float64}    # H matrix
     niters::Int           # number of elapsed iterations
