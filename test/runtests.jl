@@ -1,5 +1,6 @@
 using NMF
-using Base.Test
+using Compat
+using Compat.Test
 
 tests = ["utils",
          "initialization",

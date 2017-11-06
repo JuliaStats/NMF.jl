@@ -40,7 +40,7 @@ function normalize1_cols!(a)
     end
 end
 
-function projectnn!{T}(A::AbstractArray{T})
+function projectnn!(A::AbstractArray{T}) where T
     # project back all entries to non-negative domain
     @inbounds for i = 1:length(A)
         if A[i] < zero(T)
@@ -49,8 +49,8 @@ function projectnn!{T}(A::AbstractArray{T})
     end
 end
 
-function posneg!{T}(A::AbstractArray{T},
-                    Ap::AbstractArray{T}, An::AbstractArray{T})
+function posneg!(A::AbstractArray{T},
+                 Ap::AbstractArray{T}, An::AbstractArray{T}) where T
     # decompose A into positive part Ap and negative part An
     # s.t. A = Ap - An
 

@@ -1,11 +1,11 @@
 # Interface function: nnmf
 
-function nnmf{T}(X::AbstractMatrix{T}, k::Integer;
-                 init::Symbol=:nndsvdar,
-                 alg::Symbol=:alspgrad,
-                 maxiter::Integer=100,
-                 tol::Real=cbrt(eps(T)/100),
-                 verbose::Bool=false)
+function nnmf(X::AbstractMatrix{T}, k::Integer;
+              init::Symbol=:nndsvdar,
+              alg::Symbol=:alspgrad,
+              maxiter::Integer=100,
+              tol::Real=cbrt(eps(T)/100),
+              verbose::Bool=false) where T
 
     p, n = size(X)
     k <= min(p, n) || throw(ArgumentError("The value of k should not exceed min(size(X))."))

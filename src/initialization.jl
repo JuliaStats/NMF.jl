@@ -76,14 +76,14 @@ function nndsvd(X, k::Integer; zeroh::Bool=false, variant::Symbol=:std)
            variant == :ar  ? 2 :
            throw(ArgumentError("Invalid value for variant"))
 
-    W = @compat Array{T,2}(p, k)
-    H = @compat Array{T,2}(k, n)
+    W = Array{T,2}(p, k)
+    H = Array{T,2}(k, n)
     if zeroh
         Ht = reshape(view(H,:,:), (n, k))
         _nndsvd!(X, W, Ht, false, ivar)
         fill!(H, 0)
     else
-        Ht = @compat Array{T,2}(n, k)
+        Ht = Array{T,2}(n, k)
         _nndsvd!(X, W, Ht, true, ivar)
         for j = 1:k
             for i = 1:n
@@ -94,7 +94,7 @@ function nndsvd(X, k::Integer; zeroh::Bool=false, variant::Symbol=:std)
     return (W, H)
 end
 
-function posnegnorm{T}(x::AbstractArray{T})
+function posnegnorm(x::AbstractArray{T}) where T
     pn = zero(T)
     nn = zero(T)
     for i = 1:length(x)
@@ -108,7 +108,7 @@ function posnegnorm{T}(x::AbstractArray{T})
     return (sqrt(pn), sqrt(nn))
 end
 
-function scalepos!{T<:Number}(y, x, c::T, v0::T)
+function scalepos!(y, x, c::T, v0::T) where T<:Number
     @inbounds for i = 1:length(y)
         xi = x[i]
         if xi > zero(T)
@@ -119,7 +119,7 @@ function scalepos!{T<:Number}(y, x, c::T, v0::T)
     end
 end
 
-function scaleneg!{T<:Number}(y, x, c::T, v0::T)
+function scaleneg!(y, x, c::T, v0::T) where T<:Number
     @inbounds for i = 1:length(y)
         xi = x[i]
         if xi < zero(T)

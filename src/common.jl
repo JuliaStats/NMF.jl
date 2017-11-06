@@ -18,34 +18,34 @@ end
 
 # the result type
 
-immutable Result{T}
+struct Result{T}
     W::Matrix{T}
     H::Matrix{T}
     niters::Int
     converged::Bool
     objvalue::T
 
-    function Result(W::Matrix{T}, H::Matrix{T}, niters::Int, converged::Bool, objv)
+    function Result{T}(W::Matrix{T}, H::Matrix{T}, niters::Int, converged::Bool, objv) where T
         if size(W, 2) != size(H, 1)
             throw(DimensionMismatch("Inner dimensions of W and H mismatch."))
         end
-        new(W, H, niters, converged, objv)
+        new{T}(W, H, niters, converged, objv)
     end
 end
 
 # common algorithmic skeleton for iterative updating methods
 
-abstract NMFUpdater{T}
+abstract type NMFUpdater{T} end
 
-function nmf_skeleton!{T}(updater::NMFUpdater{T},
-                          X, W::Matrix{T}, H::Matrix{T},
-                          maxiter::Int, verbose::Bool, tol)
+function nmf_skeleton!(updater::NMFUpdater{T},
+                       X, W::Matrix{T}, H::Matrix{T},
+                       maxiter::Int, verbose::Bool, tol) where T
     objv = convert(T, NaN)
 
     # init
     state = prepare_state(updater, X, W, H)
-    preW = @compat Array{T,2}(size(W)...)
-    preH = @compat Array{T,2}(size(H)...)
+    preW = Array{T,2}(size(W)...)
+    preH = Array{T,2}(size(H)...)
     if verbose
         objv = evaluate_objv(updater, state, X, W, H)
         @printf("%-5s     %-13s    %-13s    %-13s\n", "Iter", "objv", "objv.change", "(W & H).change")
