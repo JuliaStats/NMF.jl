@@ -1,11 +1,11 @@
 # Interface function: nnmf
 
-function nnmf{T}(X::AbstractMatrix{T}, k::Integer;
-                 init::Symbol=:nndsvdar,
-                 alg::Symbol=:alspgrad,
-                 maxiter::Integer=100,
-                 tol::Real=cbrt(eps(T)/100),
-                 verbose::Bool=false)
+function nnmf(X::AbstractMatrix{T}, k::Integer;
+              init::Symbol=:nndsvdar,
+              alg::Symbol=:alspgrad,
+              maxiter::Integer=500,
+              tol::Real=cbrt(eps(T)/100),
+              verbose::Bool=false) where T<:AbstractFloat
 
     p, n = size(X)
     k <= min(p, n) || throw(ArgumentError("The value of k should not exceed min(size(X))."))
@@ -15,13 +15,15 @@ function nnmf{T}(X::AbstractMatrix{T}, k::Integer;
 
     # perform initialization
     if init == :random
-        W, H = randinit(X, k; zeroh=!initH, normalize=true)
+        W, H = randinit(X, k; zeroh=initH, normalize=true)
     elseif init == :nndsvd
-        W, H = nndsvd(X, k; zeroh=!initH)
+        W, H = nndsvd(X, k; zeroh=initH)
     elseif init == :nndsvda
-        W, H = nndsvd(X, k; variant=:a, zeroh=!initH)
+        W, H = nndsvd(X, k; variant=:a, zeroh=initH)
     elseif init == :nndsvdar
-        W, H = nndsvd(X, k; variant=:ar, zeroh=!initH)
+        W, H = nndsvd(X, k; variant=:ar, zeroh=initH)
+    elseif init == :spa
+        W, H = spa(X,k)
     else
         throw(ArgumentError("Invalid value for init."))
     end
@@ -35,6 +37,9 @@ function nnmf{T}(X::AbstractMatrix{T}, k::Integer;
         alginst = MultUpdate{T}(obj=:mse, maxiter=maxiter, tol=tol, verbose=verbose)
     elseif alg == :multdiv
         alginst = MultUpdate{T}(obj=:div, maxiter=maxiter, tol=tol, verbose=verbose)
+    elseif alg == :spa
+        #alginst = MultUpdate{T}(obj=:mse, maxiter=maxiter, tol=tol, verbose=verbose)
+        alginst=SPA{T}(obj=:mse)
     else
         throw(ArgumentError("Invalid algorithm."))
     end

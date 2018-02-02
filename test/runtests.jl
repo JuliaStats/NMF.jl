@@ -1,9 +1,11 @@
 using NMF
-using Base.Test
+using Compat
+using Compat.Test
 
 tests = ["utils",
          "initialization",
-         "alspgrad"]
+         "alspgrad",
+	 "spa"]
 
 println("Running tests:")
 for t in tests

@@ -4,9 +4,7 @@ A Julia package for non-negative matrix factorization (NMF).
 
 [![Build Status](https://travis-ci.org/JuliaStats/NMF.jl.svg?branch=master)](https://travis-ci.org/JuliaStats/NMF.jl)
 [![Coverage Status](https://coveralls.io/repos/github/JuliaStats/NMF.jl/badge.svg?branch=master)](https://coveralls.io/github/JuliaStats/NMF.jl?branch=master)
-[![NMF](http://pkg.julialang.org/badges/NMF_0.3.svg)](http://pkg.julialang.org/?pkg=NMF)
-[![NMF](http://pkg.julialang.org/badges/NMF_0.4.svg)](http://pkg.julialang.org/?pkg=NMF)
-[![NMF](http://pkg.julialang.org/badges/NMF_0.5.svg)](http://pkg.julialang.org/?pkg=NMF)
+[![NMF](http://pkg.julialang.org/badges/NMF_0.6.svg)](http://pkg.julialang.org/?pkg=NMF)
 
 ---------------------------
 
@@ -48,7 +46,7 @@ This function factorizes the input matrix ``X`` into the product of two non-nega
 In general, it returns a result instance of type ``NMF.Result``, which is defined as
 
 ```julia
-immutable Result
+struct Result
     W::Matrix{Float64}    # W matrix
     H::Matrix{Float64}    # H matrix
     niters::Int           # number of elapsed iterations

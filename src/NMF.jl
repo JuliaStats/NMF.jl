@@ -14,7 +14,7 @@ module NMF
     include("multupd.jl")
     include("projals.jl")
     include("alspgrad.jl")
-
+    include("spa.jl")
     include("interf.jl")
 
 end # module

@@ -38,7 +38,7 @@ end
 
 ## sub-routines for updating H
 
-immutable ALSGradUpdH_State{T}
+struct ALSGradUpdH_State{T}
     G::Matrix{T}      # gradient
     Hn::Matrix{T}     # newH in back-tracking
     Hp::Matrix{T}     # previous newH
@@ -47,33 +47,35 @@ immutable ALSGradUpdH_State{T}
     WtX::Matrix{T}    # W'X  (pre-computed)
     WtWD::Matrix{T}   # W'W * D
 
-    function ALSGradUpdH_State(X, W, H)
+
+    function ALSGradUpdH_State{T}(X, W, H) where T <: AbstractFloat
+
         k, n = size(H)
-        @compat new(Array{T,2}(k, n),
-                    Array{T,2}(k, n),
-                    Array{T,2}(k, n),
-                    Array{T,2}(k, n),
-                    Array{T,2}(k, k),
-                    Array{T,2}(k, n),
-                    Array{T,2}(k, n))
+        new{T}(Array{T,2}(k, n),
+               Array{T,2}(k, n),
+               Array{T,2}(k, n),
+               Array{T,2}(k, n),
+               Array{T,2}(k, k),
+               Array{T,2}(k, n),
+               Array{T,2}(k, n))
     end
 end
-ALSGradUpdH_State{T}(X, W::VecOrMat{T}, H::VecOrMat{T}) = ALSGradUpdH_State{T}(X, W, H)
+ALSGradUpdH_State(X, W::VecOrMat{T}, H::VecOrMat{T}) where {T} = ALSGradUpdH_State{T}(X, W, H)
 
 function set_w!(s::ALSGradUpdH_State, X, W)
     At_mul_B!(s.WtW, W, W)
     At_mul_B!(s.WtX, W, X)
 end
 
-function alspgrad_updateh!{T}(X,
-                              W::VecOrMat{T},
-                              H::VecOrMat{T};
-                              maxiter::Int = 1000,
-                              traceiter::Int = 20,
-                              tolg::T = cbrt(eps(T)),
-                              beta::T = convert(T, 0.2),
-                              sigma::T = convert(T, 0.01),
-                              verbose::Bool = false)
+function alspgrad_updateh!(X,
+                           W::VecOrMat{T},
+                           H::VecOrMat{T};
+                           maxiter::Int = 1000,
+                           traceiter::Int = 20,
+                           tolg::T = cbrt(eps(T)),
+                           beta::T = convert(T, 0.2),
+                           sigma::T = convert(T, 0.01),
+                           verbose::Bool = false) where T
 
     s = ALSGradUpdH_State(X, W, H)
     set_w!(s, X, W)
@@ -199,7 +201,7 @@ end
 
 ## sub-routines for updating W
 
-immutable ALSGradUpdW_State{T}
+struct ALSGradUpdW_State{T}
     G::Matrix{T}      # gradient
     Wn::Matrix{T}     # newW in back-tracking
     Wp::Matrix{T}     # previous newW
@@ -208,18 +210,20 @@ immutable ALSGradUpdW_State{T}
     XHt::Matrix{T}    # XH' (pre-computed)
     DHHt::Matrix{T}   # D * HH'
 
-    function ALSGradUpdW_State(X, W, H)
+
+    function ALSGradUpdW_State{T}(X, W, H) where T <: AbstractFloat
+
         p, k = size(W)
-        @compat new(Array{T,2}(p, k),
-                    Array{T,2}(p, k),
-                    Array{T,2}(p, k),
-                    Array{T,2}(p, k),
-                    Array{T,2}(k, k),
-                    Array{T,2}(p, k),
-                    Array{T,2}(p, k))
+        new{T}(Array{T,2}(p, k),
+               Array{T,2}(p, k),
+               Array{T,2}(p, k),
+               Array{T,2}(p, k),
+               Array{T,2}(k, k),
+               Array{T,2}(p, k),
+               Array{T,2}(p, k))
     end
 end
-ALSGradUpdW_State{T}(X, W::VecOrMat{T}, H::VecOrMat{T}) = ALSGradUpdW_State{T}(X, W, H)
+ALSGradUpdW_State(X, W::VecOrMat{T}, H::VecOrMat{T}) where {T} = ALSGradUpdW_State{T}(X, W, H)
 
 function set_h!(s::ALSGradUpdW_State, X, H)
     A_mul_Bt!(s.HHt, H, H)
@@ -227,15 +231,15 @@ function set_h!(s::ALSGradUpdW_State, X, H)
 end
 
 
-function alspgrad_updatew!{T}(X,
-                              W::VecOrMat{T},
-                              H::VecOrMat{T};
-                              maxiter::Int = 1000,
-                              traceiter::Int = 20,
-                              tolg::T = cbrt(eps(T)),
-                              beta::T = convert(T, 0.2),
-                              sigma::T = convert(T, 0.01),
-                              verbose::Bool = false)
+function alspgrad_updatew!(X,
+                           W::VecOrMat{T},
+                           H::VecOrMat{T};
+                           maxiter::Int = 1000,
+                           traceiter::Int = 20,
+                           tolg::T = cbrt(eps(T)),
+                           beta::T = convert(T, 0.2),
+                           sigma::T = convert(T, 0.01),
+                           verbose::Bool = false) where T
 
     s = ALSGradUpdW_State(X, W, H)
     set_h!(s, X, H)
@@ -361,18 +365,19 @@ end
 
 ## main algorithm
 
-type ALSPGrad{T}
+mutable struct ALSPGrad{T}
     maxiter::Int      # maximum number of main iterations
     maxsubiter::Int   # maximum number of iterations within a sub-routine
     tol::T      # tolerance of changes on W & H (main)
     tolg::T     # tolerance of grad norm in sub-routine
     verbose::Bool     # whether to show procedural information (main)
 
-    function ALSPGrad(;maxiter::Integer=100,
+    function ALSPGrad{T}(;maxiter::Integer=100,
+
                        maxsubiter::Integer=200,
                        tol::Real=cbrt(eps(T)),
                        tolg::Real=eps(T)^(1/4),
-                       verbose::Bool=false)
+                       verbose::Bool=false) where T <: AbstractFloat
         new(maxiter,
             maxsubiter,
             tol,
@@ -381,7 +386,7 @@ type ALSPGrad{T}
     end
 end
 
-immutable ALSPGradUpd{T} <: NMFUpdater{T}
+struct ALSPGradUpd{T} <: NMFUpdater{T}
     maxsubiter::Int
     tolg::T
 end
@@ -391,18 +396,18 @@ solve!(alg::ALSPGrad, X, W, H) =
                   X, W, H, alg.maxiter, alg.verbose, alg.tol)
 
 
-immutable ALSPGradUpd_State{T}
+struct ALSPGradUpd_State{T}
     WH::Matrix{T}
     uhstate::ALSGradUpdH_State
     uwstate::ALSGradUpdW_State
 
-    ALSPGradUpd_State(X, W, H) =
+    ALSPGradUpd_State{T}(X, W, H) where T <: AbstractFloat =
         new(W * H,
             ALSGradUpdH_State(X, W, H),
             ALSGradUpdW_State(X, W, H))
 end
 
-prepare_state{T}(::ALSPGradUpd{T}, X, W, H) = ALSPGradUpd_State{T}(X, W, H)
+prepare_state(::ALSPGradUpd{T}, X, W, H) where {T} = ALSPGradUpd_State{T}(X, W, H)
 evaluate_objv(u::ALSPGradUpd, s::ALSPGradUpd_State, X, W, H) = sqL2dist(X, s.WH)
 
 function update_wh!(upd::ALSPGradUpd, s::ALSPGradUpd_State, X, W, H)
