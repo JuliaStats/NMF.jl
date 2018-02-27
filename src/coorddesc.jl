@@ -33,6 +33,7 @@ solve!(alg::CoordinateDescent{T}, X, W, H) where {T} =
     nmf_skeleton!(CoordinateDescentUpd{T}(alg.α, alg.l₁ratio, alg.regularization, alg.shuffle),
                   X, W, H, alg.maxiter, alg.verbose, alg.tol)
 
+
 struct CoordinateDescentUpd{T} <: NMFUpdater{T}
     l₁W::T
     l₂W::T
@@ -57,12 +58,9 @@ struct CoordinateDescentUpd{T} <: NMFUpdater{T}
                αH*(1-l₁ratio),
                shuffle)
     end
-
 end
 
-
-
-struct CoordinateDescentState{T}
+mutable struct CoordinateDescentState{T}
     violation::T
     violation_init::Nullable{T}
 end
@@ -72,6 +70,7 @@ prepare_state(::CoordinateDescentUpd{T}, X, W, H) where {T} =
 evaluate_objv(::CoordinateDescentUpd{T}, s::CoordinateDescentState, X, W, H) where {T} =
     s.violation / get(s.violation_init, T(1.0))
 
+"Updates W only"
 function _update_coord_descent!(X, W, H, l1_reg, l2_reg, shuffle)
     HHt = H * H'
     XHt = X * H'
@@ -120,8 +119,15 @@ end
 function update_wh!(upd::CoordinateDescentUpd{T}, s::CoordinateDescentState{T},
      X::AbstractArray{T}, W::AbstractArray{T}, H::AbstractArray{T}) where T
      Ht = PermutedDimsArray(H, (2, 1))
+
      violation = zero(T)
      violation += _update_coord_descent!(X, W, H, upd.l₁W, upd.l₂W, upd.shuffle)
-     violation += _update_coord_descent!(PermutedDimsArray(X, (1,2)),
-            W, H, upd.l₁H, upd.l₂W, upd.shuffle)
+     Wt = PermutedDimsArray(W, (2, 1))
+     violation += _update_coord_descent!(PermutedDimsArray(X, (2,1)), Ht, Wt,
+      upd.l₁H, upd.l₂H, upd.shuffle)
+
+    s.violation = violation
+    if isnull(s.violation_init)
+        s.violation_init = violation
+    end
 end
