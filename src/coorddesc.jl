@@ -66,7 +66,7 @@ mutable struct CoordinateDescentState{T}
 end
 
 prepare_state(::CoordinateDescentUpd{T}, X, W, H) where {T} =
- CoordinateDescentState(0., Nullable{T}() )
+ CoordinateDescentState(zero(T), Nullable{T}() )
 evaluate_objv(::CoordinateDescentUpd{T}, s::CoordinateDescentState, X, W, H) where {T} =
     s.violation / get(s.violation_init, T(1.0))
 
