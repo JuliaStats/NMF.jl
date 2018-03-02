@@ -25,7 +25,7 @@ mutable struct CoordinateDescent{T}
     function CoordinateDescent{T}(;maxiter::Integer=100,
                               verbose::Bool=false,
                               tol::Real=cbrt(eps(T)),
-                              α::Real=T(0.001),
+                              α::Real=T(0.0),
                               regularization=:both,
                               l₁ratio::Real=zero(T),
                               shuffle::Bool=false) where T
