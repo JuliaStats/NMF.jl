@@ -1,5 +1,10 @@
 # Coordinate descent method after the one in Scikit-learn
 
+# Reference: Cichocki, Andrzej, and P. H. A. N. Anh-Huy. "Fast local algorithms for
+#  large scale nonnegative matrix and tensor factorizations."
+#  IEICE transactions on fundamentals of electronics, communications and
+#  computer sciences 92.3: 708-721, 2009.
+
 
 mutable struct TransposedArray{T} <: AbstractArray{T,2}
     A :: AbstractArray{T, 2}
