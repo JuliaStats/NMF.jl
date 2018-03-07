@@ -4,7 +4,8 @@ using Compat.Test
 
 tests = ["utils",
          "initialization",
-         "alspgrad"]
+         "alspgrad",
+         "coorddesc"]
 
 println("Running tests:")
 for t in tests

@@ -1,4 +1,19 @@
-# Coordinate descent method after the one in Scikit-learn
+# Coordinate descent method, translated from the Python/Cython implementation
+#  in scikit-learn and modified to comply with the interfaces of the NMF package
+
+# Original files
+# https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/decomposition/nmf.py
+# https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/decomposition/cdnmf_fast.pyx
+
+# Original implementation authors:
+# Vlad Niculae
+# Lars Buitinck
+# Mathieu Blondel <mathieu@mblondel.org>
+# Tom Dupre la Tour
+
+# Original license: BSD 3 clause
+
+# Julia translation: Vilim Štih
 
 # Reference: Cichocki, Andrzej, and P. H. A. N. Anh-Huy. "Fast local algorithms for
 #  large scale nonnegative matrix and tensor factorizations."
