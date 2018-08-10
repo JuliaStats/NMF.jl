@@ -12,8 +12,8 @@
 #  negative entries back to zeros.
 #
 
-import Base.LinAlg: copytri!
-import Base.LAPACK: potrs!, potrf!, potri!
+using LinearAlgebra: copytri!
+using LinearAlgebra.LAPACK: potrs!, potrf!, potri!
 
 mutable struct ProjectedALS{T}
     maxiter::Int
@@ -51,9 +51,9 @@ struct ProjectedALSUpd_State{T}
     function ProjectedALSUpd_State{T}(X, W::Matrix{T}, H::Matrix{T}) where T
         p, n, k = nmf_checksize(X, W, H)
         new{T}(W * H,
-               Array{T,2}(k, k),
-               Array{T,2}(k, k),
-               Array{T,2}(p, k))
+               Matrix{T}(undef, k, k),
+               Matrix{T}(undef, k, k),
+               Matrix{T}(undef, p, k))
     end
 end
 
@@ -84,17 +84,19 @@ function update_wh!(upd::ProjectedALSUpd{T}, s::ProjectedALSUpd_State{T},
     lambda_h = upd.lambda_h
 
     # update H
-    adddiag!(At_mul_B!(WtW, W, W), lambda_h)
-    At_mul_B!(H, W, X)   # H <- W'X
+    Wt = transpose(W)
+    adddiag!(mul!(WtW, Wt, W), lambda_h)
+    mul!(H, Wt, X)       # H <- W'X
     pdsolve!(WtW, H)     # H <- inv(WtW) * H
     projectnn!(H)
 
     # update W
-    adddiag!(A_mul_Bt!(HHt, H, H), lambda_w)
-    A_mul_Bt!(XHt, X, H)    # XHt <- XH'
+    Ht = transpose(H)
+    adddiag!(mul!(HHt, H, Ht), lambda_w)
+    mul!(XHt, X, Ht)    # XHt <- XH'
     pdrsolve!(XHt, HHt, W)  # W <- XHt * inv(HHt)
     projectnn!(W)
 
     # update WH
-    A_mul_B!(WH, W, H)
+    mul!(WH, W, H)
 end

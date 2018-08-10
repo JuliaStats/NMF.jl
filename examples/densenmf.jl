@@ -59,7 +59,7 @@ function main(args)
             run(a)
         end
     else
-        warn("Invalid command line arguments.")
+        @warn("Invalid command line arguments.")
         print_help()
     end
 end

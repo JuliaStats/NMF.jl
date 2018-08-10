@@ -1,4 +1,4 @@
-srand(5678)
+Random.seed!(5678)
 
 p = 5
 n = 8

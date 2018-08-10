@@ -1,9 +1,8 @@
 module NMF
-    using Compat
     using StatsBase
-
-    import Compat: view
-    import Base: sum!
+    using Statistics
+    using Printf
+    using LinearAlgebra
 
     export nnmf
 

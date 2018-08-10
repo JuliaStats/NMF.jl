@@ -1,7 +1,7 @@
 # Numerical utilities to support implementation
 
-import Base.BLAS: nrm2
-import Base.LAPACK: potrf!, potri!, potrs!
+using LinearAlgebra.BLAS: nrm2
+using LinearAlgebra.LAPACK: potrf!, potri!, potrs!
 
 function printf_mat(x::AbstractMatrix)
     @inbounds for i = 1:size(x,1)
@@ -10,15 +10,6 @@ function printf_mat(x::AbstractMatrix)
         end
         println()
     end
-end
-
-function mul!(y::AbstractArray, x::AbstractArray, c::Number)
-    n = length(x)
-    length(y) == n || error("Inconsistent lengths.")
-    for i = 1:n
-        @inbounds y[i] = c * x[i]
-    end
-    y
 end
 
 function adddiag!(A::Matrix, a::Number)
@@ -32,7 +23,7 @@ function adddiag!(A::Matrix, a::Number)
     return A
 end
 
-normalize1!(a) = scale!(a, 1 / sum(a))
+normalize1!(a) = rmul!(a, 1 / sum(a))
 
 function normalize1_cols!(a)
     for j = 1:size(a,2)
@@ -89,6 +80,6 @@ function pdrsolve!(A, B, x, uplo::Char='U')
     copytri!(B, uplo)
 
     # x <- A * B (the inversed one)
-    A_mul_B!(x, A, B)
+    mul!(x, A, B)
 end
 
