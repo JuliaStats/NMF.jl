@@ -11,7 +11,7 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
     k <= min(p, n) || throw(ArgumentError("The value of k should not exceed min(size(X))."))
 
     # determine whether H needs to be initialized
-    initH = alg == :projals
+    initH = alg != :projals
 
     # perform initialization
     if init == :random
