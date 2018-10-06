@@ -44,8 +44,8 @@ function nmf_skeleton!(updater::NMFUpdater{T},
 
     # init
     state = prepare_state(updater, X, W, H)
-    preW = Array{T,2}(size(W)...)
-    preH = Array{T,2}(size(H)...)
+    preW = Matrix{T}(undef, size(W))
+    preH = Matrix{T}(undef, size(H))
     if verbose
         objv = evaluate_objv(updater, state, X, W, H)
         @printf("%-5s     %-13s    %-13s    %-13s\n", "Iter", "objv", "objv.change", "(W & H).change")
@@ -57,8 +57,8 @@ function nmf_skeleton!(updater::NMFUpdater{T},
     t = 0
     while !converged && t < maxiter
         t += 1
-        copy!(preW, W)
-        copy!(preH, H)
+        copyto!(preW, W)
+        copyto!(preH, H)
 
         # update H
         update_wh!(updater, state, X, W, H)

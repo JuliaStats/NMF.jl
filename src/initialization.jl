@@ -29,7 +29,7 @@ function _nndsvd!(X, W, Ht, inith::Bool, variant::Int)
     T = eltype(W)
 
     # compute SVD
-    (U, s, V) = svd(X, thin=true)
+    (U, s, V) = svd(X, full=false)
 
     # main loop
     v0 = variant == 0 ? zero(T) :
@@ -76,14 +76,14 @@ function nndsvd(X, k::Integer; zeroh::Bool=false, variant::Symbol=:std)
            variant == :ar  ? 2 :
            throw(ArgumentError("Invalid value for variant"))
 
-    W = Array{T,2}(p, k)
-    H = Array{T,2}(k, n)
+    W = Matrix{T}(undef, p, k)
+    H = Matrix{T}(undef, k, n)
     if zeroh
         Ht = reshape(view(H,:,:), (n, k))
         _nndsvd!(X, W, Ht, false, ivar)
         fill!(H, 0)
     else
-        Ht = Array{T,2}(n, k)
+        Ht = Matrix{T}(undef, n, k)
         _nndsvd!(X, W, Ht, true, ivar)
         for j = 1:k
             for i = 1:n
