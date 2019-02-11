@@ -1,5 +1,5 @@
 using NMF
-using Base.Test
+using Test
 
 p = 5
 n = 8

@@ -82,13 +82,13 @@ end
 
 mutable struct CoordinateDescentState{T}
     violation::T
-    violation_init::Nullable{T}
+    violation_init::Union{Nothing, T}
 end
 
 prepare_state(::CoordinateDescentUpd{T}, X, W, H) where {T} =
- CoordinateDescentState(zero(T), Nullable{T}() )
-evaluate_objv(::CoordinateDescentUpd{T}, s::CoordinateDescentState, X, W, H) where {T} =
-    s.violation / get(s.violation_init, T(1.0))
+ CoordinateDescentState(zero(T), nothing)
+evaluate_objv(::CoordinateDescentUpd{T}, s::CoordinateDescentState, X, W, H) where {T} = 
+    s.violation / (s.violation_init === nothing ? oneunit(T) : s.violation_init)
 
 "Updates W only"
 function _update_coord_descent!(X, W, H, l1_reg, l2_reg, shuffle)
@@ -147,7 +147,7 @@ function update_wh!(upd::CoordinateDescentUpd{T}, s::CoordinateDescentState{T},
       upd.l₁H, upd.l₂H, upd.shuffle)
 
     s.violation = violation
-    if isnull(s.violation_init)
+    if s.violation_init !== nothing
         s.violation_init = violation
     end
 end
