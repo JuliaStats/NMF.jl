@@ -53,10 +53,10 @@ struct MultUpdMSE_State{T}
     function MultUpdMSE_State{T}(X, W::Matrix{T}, H::Matrix{T}) where T
         p, n, k = nmf_checksize(X, W, H)
         new{T}(W * H,
-               Array{T,2}(k, n),
-               Array{T,2}(k, n),
-               Array{T,2}(p, k),
-               Array{T,2}(p, k))
+               Matrix{T}(undef, k, n),
+               Matrix{T}(undef, k, n),
+               Matrix{T}(undef, p, k),
+               Matrix{T}(undef, p, k))
     end
 end
 
@@ -74,22 +74,24 @@ function update_wh!(upd::MultUpdMSE{T}, s::MultUpdMSE_State{T}, X, W::Matrix{T},
     WHHt = s.WHHt
 
     # update H
-    At_mul_B!(WtX, W, X)
-    At_mul_B!(WtWH, W, WH)
+    Wt = transpose(W)
+    mul!(WtX, Wt, X)
+    mul!(WtWH, Wt, WH)
 
     @inbounds for i = 1:length(H)
         H[i] *= (WtX[i] / (WtWH[i] + lambda))
     end
-    A_mul_B!(WH, W, H)
+    mul!(WH, W, H)
 
     # update W
-    A_mul_Bt!(XHt, X, H)
-    A_mul_Bt!(WHHt, WH, H)
+    Ht = transpose(H)
+    mul!(XHt, X, Ht)
+    mul!(WHHt, WH, Ht)
 
     @inbounds for i = 1:length(W)
         W[i] *= (XHt[i] / (WHHt[i] + lambda))
     end
-    A_mul_B!(WH, W, H)
+    mul!(WH, W, H)
 end
 
 
@@ -110,11 +112,11 @@ struct MultUpdDiv_State{T}
     function MultUpdDiv_State{T}(X, W::Matrix{T}, H::Matrix{T}) where T
         p, n, k = nmf_checksize(X, W, H)
         new{T}(W * H,
-               Array{T,2}(1, k),
-               Array{T,2}(k, 1),
-               Array{T,2}(p, n),
-               Array{T,2}(k, n),
-               Array{T,2}(p, k))
+               Matrix{T}(undef, 1, k),
+               Matrix{T}(undef, k, 1),
+               Matrix{T}(undef, p, n),
+               Matrix{T}(undef, k, n),
+               Matrix{T}(undef, p, k))
     end
 end
 
@@ -143,21 +145,21 @@ function update_wh!(upd::MultUpdDiv{T}, s::MultUpdDiv_State{T}, X, W::Matrix{T},
     @inbounds for i = 1:length(X)
         Q[i] = X[i] / (WH[i] + lambda)
     end
-    At_mul_B!(WtQ, W, Q)
+    mul!(WtQ, transpose(W), Q)
     sum!(fill!(sW, 0), W)
     @inbounds for j = 1:n, i = 1:k
         H[i,j] *= (WtQ[i,j] / sW[i])
     end
-    A_mul_B!(WH, W, H)
+    mul!(WH, W, H)
 
     # update W
     @inbounds for i = 1:length(X)
         Q[i] = X[i] / (WH[i] + lambda)
     end
-    A_mul_Bt!(QHt, Q, H)
+    mul!(QHt, Q, transpose(H))
     sum!(fill!(sH, 0), H)
     @inbounds for j = 1:k, i = 1:p
         W[i,j] *= (QHt[i,j] / sH[j])
     end
-    A_mul_B!(WH, W, H)
+    mul!(WH, W, H)
 end

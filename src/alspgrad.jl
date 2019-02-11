@@ -49,20 +49,21 @@ struct ALSGradUpdH_State{T}
 
     function ALSGradUpdH_State{T}(X, W, H) where T
         k, n = size(H)
-        new{T}(Array{T,2}(k, n),
-               Array{T,2}(k, n),
-               Array{T,2}(k, n),
-               Array{T,2}(k, n),
-               Array{T,2}(k, k),
-               Array{T,2}(k, n),
-               Array{T,2}(k, n))
+        new{T}(Matrix{T}(undef, k, n),
+               Matrix{T}(undef, k, n),
+               Matrix{T}(undef, k, n),
+               Matrix{T}(undef, k, n),
+               Matrix{T}(undef, k, k),
+               Matrix{T}(undef, k, n),
+               Matrix{T}(undef, k, n))
     end
 end
 ALSGradUpdH_State(X, W::VecOrMat{T}, H::VecOrMat{T}) where {T} = ALSGradUpdH_State{T}(X, W, H)
 
 function set_w!(s::ALSGradUpdH_State, X, W)
-    At_mul_B!(s.WtW, W, W)
-    At_mul_B!(s.WtX, W, X)
+    Wt = transpose(W)
+    mul!(s.WtW, Wt, W)
+    mul!(s.WtX, Wt, X)
 end
 
 function alspgrad_updateh!(X,
@@ -120,7 +121,7 @@ function _alspgrad_updateh!(X,                      # size (p, n)
         t += 1
 
         # compute gradient
-        A_mul_B!(G, WtW, H)
+        mul!(G, WtW, H)
         for i = 1:length(G)
             G[i] -= WtX[i]
         end
@@ -150,7 +151,7 @@ function _alspgrad_updateh!(X,                      # size (p, n)
 
                 # compute criterion
                 dv1 = BLAS.dot(G, D)  # <G, D>
-                A_mul_B!(WtWD, WtW, D)
+                mul!(WtWD, WtW, D)
                 dv2 = BLAS.dot(WtWD, D)  # <D, WtW * D>
 
                 # back-track
@@ -164,20 +165,20 @@ function _alspgrad_updateh!(X,                      # size (p, n)
                     if !suff_decr
                         α *= β
                     else
-                        copy!(H, Hn)
+                        copyto!(H, Hn)
                         break
                     end
                 else
                     if suff_decr
                         if α/β < αmax
-                            copy!(Hp, Hn)
+                            copyto!(Hp, Hn)
                             α /= β
                         else
-                            copy!(H, Hn)
+                            copyto!(H, Hn)
                             break
                         end
                     else
-                        copy!(H, Hp)
+                        copyto!(H, Hp)
                         break
                     end
                 end
@@ -186,7 +187,7 @@ function _alspgrad_updateh!(X,                      # size (p, n)
 
         # print info
         if verbose
-            A_mul_B!(WH, W, H)
+            mul!(WH, W, H)
             preobjv = objv
             objv = sqL2dist(X, WH)
             @printf("%5d    %12.5e    %12.5e    %12.5e    %8.4f    %12d\n",
@@ -210,20 +211,21 @@ struct ALSGradUpdW_State{T}
 
     function ALSGradUpdW_State{T}(X, W, H) where T
         p, k = size(W)
-        new{T}(Array{T,2}(p, k),
-               Array{T,2}(p, k),
-               Array{T,2}(p, k),
-               Array{T,2}(p, k),
-               Array{T,2}(k, k),
-               Array{T,2}(p, k),
-               Array{T,2}(p, k))
+        new{T}(Matrix{T}(undef, p, k),
+               Matrix{T}(undef, p, k),
+               Matrix{T}(undef, p, k),
+               Matrix{T}(undef, p, k),
+               Matrix{T}(undef, k, k),
+               Matrix{T}(undef, p, k),
+               Matrix{T}(undef, p, k))
     end
 end
 ALSGradUpdW_State(X, W::VecOrMat{T}, H::VecOrMat{T}) where {T} = ALSGradUpdW_State{T}(X, W, H)
 
 function set_h!(s::ALSGradUpdW_State, X, H)
-    A_mul_Bt!(s.HHt, H, H)
-    A_mul_Bt!(s.XHt, X, H)
+    Ht = transpose(H)
+    mul!(s.HHt, H, Ht)
+    mul!(s.XHt, X, Ht)
 end
 
 
@@ -282,7 +284,7 @@ function _alspgrad_updatew!(X,                      # size (p, n)
         t += 1
 
         # compute gradient
-        A_mul_B!(G, W, HHt)
+        mul!(G, W, HHt)
         for i = 1:length(G)
             G[i] -= XHt[i]
         end
@@ -312,7 +314,7 @@ function _alspgrad_updatew!(X,                      # size (p, n)
 
                 # compute criterion
                 dv1 = BLAS.dot(G, D)  # <G, D>
-                A_mul_B!(DHHt, D, HHt)
+                mul!(DHHt, D, HHt)
                 dv2 = BLAS.dot(DHHt, D)  # <D * HHt, D>
 
                 # back-track
@@ -326,20 +328,20 @@ function _alspgrad_updatew!(X,                      # size (p, n)
                     if !suff_decr
                         α *= β
                     else
-                        copy!(W, Wn)
+                        copyto!(W, Wn)
                         break
                     end
                 else
                     if suff_decr
                         if α/β < αmax
-                            copy!(Wp, Wn)
+                            copyto!(Wp, Wn)
                             α /= β
                         else
-                            copy!(W, Wn)
+                            copyto!(W, Wn)
                             break
                         end
                     else
-                        copy!(W, Wp)
+                        copyto!(W, Wp)
                         break
                     end
                 end
@@ -348,7 +350,7 @@ function _alspgrad_updatew!(X,                      # size (p, n)
 
         # print info
         if verbose
-            A_mul_B!(WH, W, H)
+            mul!(WH, W, H)
             preobjv = objv
             objv = sqL2dist(X, WH)
             @printf("%5d    %12.5e    %12.5e    %12.5e    %8.4f    %12d\n",
@@ -419,6 +421,6 @@ function update_wh!(upd::ALSPGradUpd, s::ALSPGradUpd_State, X, W, H)
         upd.maxsubiter, 20, upd.tolg, convert(T, 0.2), convert(T, 0.01), false)
 
     # update WH
-    A_mul_B!(s.WH, W, H)
+    mul!(s.WH, W, H)
 end
 

@@ -11,7 +11,7 @@ NMF.adddiag!(a, 0.)
 @test a == a0
 
 NMF.adddiag!(a, 2.5)
-@test a == a0 + 2.5 * eye(3,3)
+@test a == a0 + 2.5I
 
 ## normalize1!
 
@@ -23,7 +23,7 @@ NMF.normalize1!(a)
 
 a = rand(5, 6)
 NMF.normalize1_cols!(a)
-@test vec(sum(a,1)) ≈ ones(6)
+@test vec(sum(a, dims=1)) ≈ ones(6)
 
 ## projectnn!
 

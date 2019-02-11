@@ -1,6 +1,7 @@
 using NMF
-using Compat
-using Compat.Test
+using Test
+using Random
+using LinearAlgebra
 
 tests = ["utils",
          "initialization",
