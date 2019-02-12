@@ -21,13 +21,6 @@
 #  computer sciences 92.3: 708-721, 2009.
 
 
-mutable struct TransposedArray{T} <: AbstractArray{T,2}
-    A :: AbstractArray{T, 2}
-end
-
-Base.size(x::TransposedArray) = size(x.A)[end:-1:1]
-Base.getindex(x::TransposedArray, I::Vararg{Int, 2}) = fybc
-
 mutable struct CoordinateDescent{T}
     maxiter::Int
     verbose::Bool
@@ -137,14 +130,14 @@ end
 
 
 function update_wh!(upd::CoordinateDescentUpd{T}, s::CoordinateDescentState{T},
-     X::AbstractArray{T}, W::AbstractArray{T}, H::AbstractArray{T}) where T
-     Ht = PermutedDimsArray(H, (2, 1))
+    X::AbstractArray{T}, W::AbstractArray{T}, H::AbstractArray{T}) where T
+    Ht = transpose(H)
 
-     violation = zero(T)
-     violation += _update_coord_descent!(X, W, H, upd.l₁W, upd.l₂W, upd.shuffle)
-     Wt = PermutedDimsArray(W, (2, 1))
-     violation += _update_coord_descent!(PermutedDimsArray(X, (2,1)), Ht, Wt,
-      upd.l₁H, upd.l₂H, upd.shuffle)
+    violation = zero(T)
+    violation += _update_coord_descent!(X, W, H, upd.l₁W, upd.l₂W, upd.shuffle)
+    Wt = transpose(W)
+    violation += _update_coord_descent!(PermutedDimsArray(X, (2,1)), Ht, Wt,
+    upd.l₁H, upd.l₂H, upd.shuffle)
 
     s.violation = violation
     if s.violation_init !== nothing
