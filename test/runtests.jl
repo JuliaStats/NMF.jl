@@ -5,7 +5,9 @@ using LinearAlgebra
 
 tests = ["utils",
          "initialization",
-         "alspgrad"]
+         "alspgrad",
+         "coorddesc",
+         "interf"]
 
 println("Running tests:")
 for t in tests

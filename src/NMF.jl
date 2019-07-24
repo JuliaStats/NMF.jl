@@ -13,6 +13,7 @@ module NMF
     include("multupd.jl")
     include("projals.jl")
     include("alspgrad.jl")
+    include("coorddesc.jl")
 
     include("interf.jl")
 

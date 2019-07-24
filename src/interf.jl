@@ -35,6 +35,8 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
         alginst = MultUpdate{T}(obj=:mse, maxiter=maxiter, tol=tol, verbose=verbose)
     elseif alg == :multdiv
         alginst = MultUpdate{T}(obj=:div, maxiter=maxiter, tol=tol, verbose=verbose)
+    elseif alg == :cd
+        alginst = CoordinateDescent{T}(maxiter=maxiter, tol=tol, verbose=verbose)
     else
         throw(ArgumentError("Invalid algorithm."))
     end
