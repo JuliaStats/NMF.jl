@@ -191,7 +191,7 @@ The matrices ``W`` and ``H`` are updated in place.
                       tol::Real=1.0e-6,          # tolerance of changes on W and H upon convergence
                       α::Real=0.0,               # constant that multiplies the regularization terms
                       regularization=:both,      # select whether the regularization affects the components (H), the transformation (W), both or none of them (:components, :transformation, :both, :none)
-                      l₁ratio::Real=0.0,         # l2 / l2 regularization mixing parameter (in [0; 1])
+                      l₁ratio::Real=0.0,         # l1 / l2 regularization mixing parameter (in [0; 1])
                       shuffle::Bool=false)       # if true, randomize the order of coordinates in the CD solver
     ```
 
