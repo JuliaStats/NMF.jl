@@ -22,13 +22,15 @@
 
 
 mutable struct CoordinateDescent{T}
-    maxiter::Int
-    verbose::Bool
-    tol::T
-    α::T
-    l₁ratio::T
-    regularization::Symbol
-    shuffle::Bool
+    maxiter::Int           # maximum number of iterations (in main procedure)
+    verbose::Bool          # whether to show procedural information
+    tol::T                 # tolerance of changes on W and H upon convergence
+    α::T                   # constant that multiplies the regularization terms
+    l₁ratio::T             # select whether the regularization affects the components (H), 
+                           # the transformation (W), both or none of them 
+                           # (:components, :transformation, :both, :none)
+    regularization::Symbol # l1 / l2 regularization mixing parameter (in [0; 1])
+    shuffle::Bool          # # if true, randomize the order of coordinates in the CD solver
 
     function CoordinateDescent{T}(;maxiter::Integer=100,
                               verbose::Bool=false,

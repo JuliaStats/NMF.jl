@@ -18,10 +18,10 @@ A Julia package for non-negative matrix factorization (NMF).
 - ALS Projected Gradient Methods
 - Random Initialization
 - NNDSVD Initialization
+- Sparse NMF
 
 #### To do
 
-- Sparse NMF
 - Probabilistic NMF
 
 
@@ -73,6 +73,7 @@ The function supports the following keyword arguments:
     - ``multdiv``:  Multiplicative update (using divergence as objective)
     - ``projals``:  (Naive) Projected Alternate Least Square
     - ``alspgrad``:  Alternate Least Square using Projected Gradient Descent
+    - ``cd``: Coordinate Descent solver that uses Fast Hierarchical Alternating Least Squares (implemetation similar to scikit-learn)
 
 - ``maxiter``: Maximum number of iterations (default = ``100``).
 
@@ -178,6 +179,21 @@ The matrices ``W`` and ``H`` are updated in place.
              verbose::Bool=false)       # whether to show procedural information
     ```
 
+- **Coordinate Descent solver with Fast Hierarchical Alternating Least Squares**
+
+    Reference: Cichocki, Andrzej, and P. H. A. N. Anh-Huy. Fast local algorithms for large scale nonnegative matrix and tensor factorizations. IEICE transactions on fundamentals of electronics, communications and computer sciences 92.3: 708-721 (2009).
+    
+    Sequential constrained minimization on a set of squared Euclidean distances over W and H matrices. Uses l_1 and l_2 penalties to enforce sparsity.
+
+    ```julia
+    CoordinateDescent(maxiter::Integer=100,      # maximum number of iterations (in main procedure)
+                      verbose::Bool=false,       # whether to show procedural information
+                      tol::Real=1.0e-6,          # tolerance of changes on W and H upon convergence
+                      α::Real=0.0,               # constant that multiplies the regularization terms
+                      regularization=:both,      # select whether the regularization affects the components (H), the transformation (W), both or none of them (:components, :transformation, :both, :none)
+                      l₁ratio::Real=0.0,         # l1 / l2 regularization mixing parameter (in [0; 1])
+                      shuffle::Bool=false)       # if true, randomize the order of coordinates in the CD solver
+    ```
 
 ## Examples
 
@@ -203,7 +219,7 @@ import NMF
 W, H = NMF.randinit(X, 5)
 
  # optimize 
-NMF.solve!(NMF.MultUpdate(obj=:mse,maxiter=100), X, W, H)
+NMF.solve!(NMF.MultUpdate{Float64}(obj=:mse,maxiter=100), X, W, H)
 ```
 
 #### Use Naive ALS
@@ -215,7 +231,7 @@ import NMF
 W, H = NMF.randinit(X, 5)
 
  # optimize 
-NMF.solve!(NMF.ProjectedALS(maxiter=50), X, W, H)
+NMF.solve!(NMF.ProjectedALS{Float64}(maxiter=50), X, W, H)
 ```
 
 #### Use ALS with Projected Gradient Descent
@@ -227,6 +243,18 @@ import NMF
 W, H = NMF.nndsvdar(X, 5)
 
  # optimize 
-NMF.solve!(NMF.ALSPGrad(maxiter=50, tolg=1.0e-6), X, W, H)
+NMF.solve!(NMF.ALSPGrad{Float64}(maxiter=50, tolg=1.0e-6), X, W, H)
+```
+
+#### Use Coordinate Descent
+
+```julia
+import NMF
+
+ # initialize
+W, H = NMF.nndsvdar(X, 5)
+
+ # optimize 
+NMF.solve!(NMF.CoordinateDescent{Float64}(maxiter=50, α=0.5, l₁ratio=0.5), X, W, H)
 ```
 
