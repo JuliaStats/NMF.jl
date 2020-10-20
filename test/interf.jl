@@ -9,7 +9,7 @@ for T in (Float64, Float32)
     Hg = max.(rand(T, k, n) .- 0.3, 0)
     X = Wg * Hg
 
-    for alg in (:multmse, :multdiv, :projals, :alspgrad, :cd)
+    for alg in (:multmse, :multdiv, :projals, :alspgrad, :cd, :greedycd)
         for init in (:random, :nndsvd, :nndsvda, :nndsvdar)
             ret = NMF.nnmf(X, k, alg=alg, init=init)
         end

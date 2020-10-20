@@ -8,6 +8,7 @@ tests = ["utils",
          "multupd", 
          "alspgrad",
          "coorddesc",
+         "greedycd",
          "interf"]
 
 println("Running tests:")
