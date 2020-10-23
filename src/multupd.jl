@@ -7,40 +7,44 @@
 #
 
 mutable struct MultUpdate{T}
-    obj::Symbol         # objective :mse or :div
-    maxiter::Int        # maximum number of iterations
-    verbose::Bool       # whether to show procedural information
-    tol::T              # change tolerance upon convergence
-    lambda::T           # regularization coefficient
+    obj::Symbol     # objective :mse or :div
+    maxiter::Int    # maximum number of iterations
+    verbose::Bool   # whether to show procedural information
+    tol::T          # change tolerance upon convergence
+    lambda_w::T     # L1 regularization coefficient for W
+    lambda_h::T     # L1 regularization coefficient for H
 
     function MultUpdate{T}(;obj::Symbol=:mse,
                             maxiter::Integer=100,
                             verbose::Bool=false,
                             tol::Real=cbrt(eps(T)),
-                            lambda::Real=sqrt(eps(T))) where T
+                            lambda_w::Real=zero(T),
+                            lambda_h::Real=zero(T)) where T
 
         obj == :mse || obj == :div || throw(ArgumentError("Invalid value for obj."))
         maxiter > 1 || throw(ArgumentError("maxiter must be greater than 1."))
         tol > 0 || throw(ArgumentError("tol must be positive."))
-        lambda >= 0 || throw(ArgumentError("lambda must be non-negative."))
-
-        new{T}(obj, maxiter, verbose, tol, lambda)
+        lambda_w >= 0 || throw(ArgumentError("lambda_w must be non-negative."))
+        lambda_h >= 0 || throw(ArgumentError("lambda_h must be non-negative."))
+        new{T}(obj, maxiter, verbose, tol, lambda_w, lambda_h)
     end
 end
 
-function solve!(alg::MultUpdate, X, W, H)
+function solve!(alg::MultUpdate{T}, X, W, H) where T
 
     if alg.obj == :mse
-        nmf_skeleton!(MultUpdMSE(alg.lambda), X, W, H, alg.maxiter, alg.verbose, alg.tol)
+        nmf_skeleton!(MultUpdMSE(alg.lambda_w, alg.lambda_h, sqrt(eps(T))), X, W, H, alg.maxiter, alg.verbose, alg.tol)
     else # alg == :div
-        nmf_skeleton!(MultUpdDiv(alg.lambda), X, W, H, alg.maxiter, alg.verbose, alg.tol)
+        nmf_skeleton!(MultUpdDiv(alg.lambda_w, alg.lambda_h, sqrt(eps(T))), X, W, H, alg.maxiter, alg.verbose, alg.tol)
     end
 end
 
 # the multiplicative updating algorithm for MSE objective
 
 struct MultUpdMSE{T} <: NMFUpdater{T}
-    lambda::T
+    lambda_w::T
+    lambda_h::T
+    delta::T
 end
 
 struct MultUpdMSE_State{T}
@@ -66,7 +70,9 @@ evaluate_objv(::MultUpdMSE, s::MultUpdMSE_State, X, W, H) = sqL2dist(X, s.WH)
 function update_wh!(upd::MultUpdMSE{T}, s::MultUpdMSE_State{T}, X, W::Matrix{T}, H::Matrix{T}) where T
 
     # fields
-    lambda = upd.lambda
+    lambda_w = upd.lambda_w
+    lambda_h = upd.lambda_h
+    delta = upd.delta
     WH = s.WH
     WtX = s.WtX
     WtWH = s.WtWH
@@ -79,7 +85,7 @@ function update_wh!(upd::MultUpdMSE{T}, s::MultUpdMSE_State{T}, X, W::Matrix{T},
     mul!(WtWH, Wt, WH)
 
     @inbounds for i = 1:length(H)
-        H[i] *= (WtX[i] / (WtWH[i] + lambda))
+        H[i] *= (max(zero(T), WtX[i] - lambda_h) / (WtWH[i] + delta))
     end
     mul!(WH, W, H)
 
@@ -89,7 +95,7 @@ function update_wh!(upd::MultUpdMSE{T}, s::MultUpdMSE_State{T}, X, W::Matrix{T},
     mul!(WHHt, WH, Ht)
 
     @inbounds for i = 1:length(W)
-        W[i] *= (XHt[i] / (WHHt[i] + lambda))
+        W[i] *= (max(zero(T), XHt[i] - lambda_w) / (WHHt[i] + delta))
     end
     mul!(WH, W, H)
 end
@@ -98,7 +104,9 @@ end
 # the multiplicative updating algorithm for divergence objective
 
 struct MultUpdDiv{T} <: NMFUpdater{T}
-    lambda::T
+    lambda_w::T
+    lambda_h::T
+    delta::T
 end
 
 struct MultUpdDiv_State{T}
@@ -131,7 +139,9 @@ function update_wh!(upd::MultUpdDiv{T}, s::MultUpdDiv_State{T}, X, W::Matrix{T},
     pn = p * n
 
     # fields
-    lambda = upd.lambda
+    lambda_w = upd.lambda_w
+    lambda_h = upd.lambda_h
+    delta = upd.delta
     sW = s.sW
     sH = s.sH
     WH = s.WH
@@ -143,23 +153,31 @@ function update_wh!(upd::MultUpdDiv{T}, s::MultUpdDiv_State{T}, X, W::Matrix{T},
 
     # update H
     @inbounds for i = 1:length(X)
-        Q[i] = X[i] / (WH[i] + lambda)
+        Q[i] = X[i] / (WH[i] + delta)
     end
     mul!(WtQ, transpose(W), Q)
     sum!(fill!(sW, 0), W)
     @inbounds for j = 1:n, i = 1:k
-        H[i,j] *= (WtQ[i,j] / (sW[i] + lambda))
+        if lambda_h > zero(T)
+            H[i,j] *= (WtQ[i,j] / (sW[i] + lambda_h))
+        else
+            H[i,j] *= (WtQ[i,j] / (sW[i] + delta))
+        end
     end
     mul!(WH, W, H)
 
     # update W
     @inbounds for i = 1:length(X)
-        Q[i] = X[i] / (WH[i] + lambda)
+        Q[i] = X[i] / (WH[i] + delta)
     end
     mul!(QHt, Q, transpose(H))
     sum!(fill!(sH, 0), H)
     @inbounds for j = 1:k, i = 1:p
-        W[i,j] *= (QHt[i,j] / (sH[j] + lambda))
+        if lambda_w > zero(T)
+            W[i,j] *= (QHt[i,j] / (sH[j] + lambda_w))
+        else
+            W[i,j] *= (QHt[i,j] / (sH[j] + delta))
+        end
     end
     mul!(WH, W, H)
 end
