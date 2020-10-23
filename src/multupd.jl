@@ -148,7 +148,7 @@ function update_wh!(upd::MultUpdDiv{T}, s::MultUpdDiv_State{T}, X, W::Matrix{T},
     mul!(WtQ, transpose(W), Q)
     sum!(fill!(sW, 0), W)
     @inbounds for j = 1:n, i = 1:k
-        H[i,j] *= (WtQ[i,j] / sW[i])
+        H[i,j] *= (WtQ[i,j] / (sW[i] + lambda))
     end
     mul!(WH, W, H)
 
@@ -159,7 +159,7 @@ function update_wh!(upd::MultUpdDiv{T}, s::MultUpdDiv_State{T}, X, W::Matrix{T},
     mul!(QHt, Q, transpose(H))
     sum!(fill!(sH, 0), H)
     @inbounds for j = 1:k, i = 1:p
-        W[i,j] *= (QHt[i,j] / sH[j])
+        W[i,j] *= (QHt[i,j] / (sH[j] + lambda))
     end
     mul!(WH, W, H)
 end
