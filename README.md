@@ -143,11 +143,12 @@ The matrices ``W`` and ``H`` are updated in place.
     This algorithm has two different kind of objectives: minimizing mean-squared-error (``:mse``) and minimizing divergence (``:div``). Both ``W`` and ``H`` need to be initialized.
 
     ```julia
-    MultUpdate(obj=:mse,        # objective, either :mse or :div
-               maxiter=100,     # maximum number of iterations
-               verbose=false,   # whether to show procedural information
-               tol=1.0e-6,      # tolerance of changes on W and H upon convergence
-               lambda=1.0e-9)   # regularization coefficients (added to the denominator)
+    MultUpdate(obj::Symbol=:mse,        # objective, either :mse or :div
+               maxiter::Integer=100,    # maximum number of iterations
+               verbose::Bool=false,     # whether to show procedural information
+               tol::Real=1.0e-6,        # tolerance of changes on W and H upon convergence
+               lambda_w::Real=0.0,      # L1 regularization coefficient for W
+               lambda_h::Real=0.0)      # L1 regularization coefficient for H
     ```
 
     **Note:** the values above are default values for the keyword arguments. One can override part (or all) of them.
