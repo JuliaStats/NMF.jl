@@ -26,6 +26,10 @@ mutable struct MultUpdate{T}
         tol > 0 || throw(ArgumentError("tol must be positive."))
         lambda_w >= 0 || throw(ArgumentError("lambda_w must be non-negative."))
         lambda_h >= 0 || throw(ArgumentError("lambda_h must be non-negative."))
+        if obj == :div
+            lambda_w = max(lambda_w, sqrt(eps(T)))
+            lambda_h = max(lambda_h, sqrt(eps(T)))
+        end
         new{T}(obj, maxiter, verbose, tol, lambda_w, lambda_h)
     end
 end
@@ -158,11 +162,7 @@ function update_wh!(upd::MultUpdDiv{T}, s::MultUpdDiv_State{T}, X, W::Matrix{T},
     mul!(WtQ, transpose(W), Q)
     sum!(fill!(sW, 0), W)
     @inbounds for j = 1:n, i = 1:k
-        if lambda_h > zero(T)
-            H[i,j] *= (WtQ[i,j] / (sW[i] + lambda_h))
-        else
-            H[i,j] *= (WtQ[i,j] / (sW[i] + delta))
-        end
+        H[i,j] *= (WtQ[i,j] / (sW[i] + lambda_h))
     end
     mul!(WH, W, H)
 
@@ -173,11 +173,7 @@ function update_wh!(upd::MultUpdDiv{T}, s::MultUpdDiv_State{T}, X, W::Matrix{T},
     mul!(QHt, Q, transpose(H))
     sum!(fill!(sH, 0), H)
     @inbounds for j = 1:k, i = 1:p
-        if lambda_w > zero(T)
-            W[i,j] *= (QHt[i,j] / (sH[j] + lambda_w))
-        else
-            W[i,j] *= (QHt[i,j] / (sH[j] + delta))
-        end
+        W[i,j] *= (QHt[i,j] / (sH[j] + lambda_w))
     end
     mul!(WH, W, H)
 end
