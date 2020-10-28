@@ -7,25 +7,31 @@
 #
 
 mutable struct MultUpdate{T}
-    obj::Symbol     # objective :mse or :div
-    maxiter::Int    # maximum number of iterations
-    verbose::Bool   # whether to show procedural information
-    tol::T          # change tolerance upon convergence
-    lambda_w::T     # L1 regularization coefficient for W
-    lambda_h::T     # L1 regularization coefficient for H
+    obj::Symbol                 # objective :mse or :div
+    maxiter::Int                # maximum number of iterations
+    verbose::Bool               # whether to show procedural information
+    tol::T                      # change tolerance upon convergence
+    lambda_w::T                 # L1 regularization coefficient for W
+    lambda_h::T                 # L1 regularization coefficient for H
 
     function MultUpdate{T}(;obj::Symbol=:mse,
                             maxiter::Integer=100,
                             verbose::Bool=false,
                             tol::Real=cbrt(eps(T)),
                             lambda_w::Real=zero(T),
-                            lambda_h::Real=zero(T)) where T
+                            lambda_h::Real=zero(T),
+                            lambda::Union{Real, Nothing}=nothing) where T
 
         obj == :mse || obj == :div || throw(ArgumentError("Invalid value for obj."))
         maxiter > 1 || throw(ArgumentError("maxiter must be greater than 1."))
         tol > 0 || throw(ArgumentError("tol must be positive."))
         lambda_w >= 0 || throw(ArgumentError("lambda_w must be non-negative."))
         lambda_h >= 0 || throw(ArgumentError("lambda_h must be non-negative."))
+        if !isnothing(lambda) && lambda >= 0
+            @warn "lambda is deprecated, use lambda_w and lambda_h instead."
+            lambda_w = iszero(lambda_w) ? lambda : lambda_w
+            lambda_h = iszero(lambda_h) ? lambda : lambda_h
+        end
         if obj == :div
             lambda_w = max(lambda_w, sqrt(eps(T)))
             lambda_h = max(lambda_h, sqrt(eps(T)))
