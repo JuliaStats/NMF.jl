@@ -27,7 +27,7 @@ mutable struct MultUpdate{T}
         tol > 0 || throw(ArgumentError("tol must be positive."))
         lambda_w >= 0 || throw(ArgumentError("lambda_w must be non-negative."))
         lambda_h >= 0 || throw(ArgumentError("lambda_h must be non-negative."))
-        if !isnothing(lambda) && lambda >= 0
+        if lambda !== nothing && lambda >= 0
             @warn "lambda is deprecated, use lambda_w and lambda_h instead."
             lambda_w = iszero(lambda_w) ? lambda : lambda_w
             lambda_h = iszero(lambda_h) ? lambda : lambda_h
