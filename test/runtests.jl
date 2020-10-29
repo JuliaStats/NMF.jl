@@ -5,6 +5,7 @@ using LinearAlgebra
 
 tests = ["utils",
          "initialization",
+         "multupd", 
          "alspgrad",
          "coorddesc",
          "interf"]
