@@ -7,6 +7,8 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
               tol::Real=cbrt(eps(T)/100),
               verbose::Bool=false) where T
 
+    eltype(X) <: Number && all(X .>= zero(T)) || throw(ArgumentError("The elements of X must be non-negative."))
+
     p, n = size(X)
     k <= min(p, n) || throw(ArgumentError("The value of k should not exceed min(size(X))."))
 
