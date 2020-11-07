@@ -14,6 +14,7 @@ module NMF
     include("projals.jl")
     include("alspgrad.jl")
     include("coorddesc.jl")
+    include("greedycd.jl")
 
     include("interf.jl")
 

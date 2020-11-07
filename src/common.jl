@@ -47,9 +47,10 @@ function nmf_skeleton!(updater::NMFUpdater{T},
     preW = Matrix{T}(undef, size(W))
     preH = Matrix{T}(undef, size(H))
     if verbose
+        start = time()
         objv = evaluate_objv(updater, state, X, W, H)
-        @printf("%-5s     %-13s    %-13s    %-13s\n", "Iter", "objv", "objv.change", "(W & H).change")
-        @printf("%5d    %13.6e\n", 0, objv)
+        @printf("%-5s    %-13s    %-13s    %-13s    %-13s\n", "Iter", "Elapsed time", "objv", "objv.change", "(W & H).change")
+        @printf("%5d    %13.6e    %13.6e\n", 0, 0.0, objv)
     end
 
     # main loop
@@ -71,10 +72,11 @@ function nmf_skeleton!(updater::NMFUpdater{T},
 
         # display info
         if verbose
+            elapsed = time() - start
             preobjv = objv
             objv = evaluate_objv(updater, state, X, W, H)
-            @printf("%5d    %13.6e    %13.6e    %13.6e\n",
-                t, objv, objv - preobjv, dev)
+            @printf("%5d    %13.6e    %13.6e    %13.6e    %13.6e\n",
+                t, elapsed, objv, objv - preobjv, dev)
         end
     end
 

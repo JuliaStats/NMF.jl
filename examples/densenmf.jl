@@ -45,6 +45,8 @@ function print_help()
     println("    multdiv:   Multiplicative update (minimize divergence)")
     println("    projals:   Projected ALS")
     println("    alspgrad:  ALS Projected Gradient Descent")
+    println("    cd:        Coordinate Descent")
+    println("    greedycd:  Greedy Coordinate Descent")
     println()
 end
 

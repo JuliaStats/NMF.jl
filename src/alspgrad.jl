@@ -108,7 +108,7 @@ function _alspgrad_updateh!(X,                      # size (p, n)
         @printf("%5s    %12s    %12s    %12s    %8s    %12s\n",
             "Iter", "objv", "objv.change", "1st-ord", "alpha", "back-tracks")
         WH = W * H
-        objv = sqL2dist(X, WH)
+        objv = convert(T, 0.5) * sqL2dist(X, WH)
         @printf("%5d    %12.5e\n", 0, objv)
     end
 
@@ -189,7 +189,7 @@ function _alspgrad_updateh!(X,                      # size (p, n)
         if verbose
             mul!(WH, W, H)
             preobjv = objv
-            objv = sqL2dist(X, WH)
+            objv = convert(T, 0.5) * sqL2dist(X, WH)
             @printf("%5d    %12.5e    %12.5e    %12.5e    %8.4f    %12d\n",
                 t, objv, objv - preobjv, pgnrm, α, it)
         end
@@ -271,7 +271,7 @@ function _alspgrad_updatew!(X,                      # size (p, n)
         @printf("%5s    %12s    %12s    %12s    %8s    %12s\n",
             "Iter", "objv", "objv.change", "1st-ord", "alpha", "back-tracks")
         WH = W * H
-        objv = sqL2dist(X, WH)
+        objv = convert(T, 0.5) * sqL2dist(X, WH)
         @printf("%5d    %12.5e\n", 0, objv)
     end
 
@@ -352,7 +352,7 @@ function _alspgrad_updatew!(X,                      # size (p, n)
         if verbose
             mul!(WH, W, H)
             preobjv = objv
-            objv = sqL2dist(X, WH)
+            objv = convert(T, 0.5) * sqL2dist(X, WH)
             @printf("%5d    %12.5e    %12.5e    %12.5e    %8.4f    %12d\n",
                 t, objv, objv - preobjv, pgnrm, α, it)
         end
@@ -405,7 +405,7 @@ struct ALSPGradUpd_State{T}
 end
 
 prepare_state(::ALSPGradUpd{T}, X, W, H) where {T} = ALSPGradUpd_State{T}(X, W, H)
-evaluate_objv(u::ALSPGradUpd, s::ALSPGradUpd_State, X, W, H) = sqL2dist(X, s.WH)
+evaluate_objv(u::ALSPGradUpd{T}, s::ALSPGradUpd_State{T}, X, W, H) where T = convert(T, 0.5) * sqL2dist(X, s.WH)
 
 function update_wh!(upd::ALSPGradUpd, s::ALSPGradUpd_State, X, W, H)
     T = eltype(W)

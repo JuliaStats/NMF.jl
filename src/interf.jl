@@ -2,7 +2,7 @@
 
 function nnmf(X::AbstractMatrix{T}, k::Integer;
               init::Symbol=:nndsvdar,
-              alg::Symbol=:alspgrad,
+              alg::Symbol=:greedycd,
               maxiter::Integer=100,
               tol::Real=cbrt(eps(T)/100),
               verbose::Bool=false) where T
@@ -39,6 +39,8 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
         alginst = MultUpdate{T}(obj=:div, maxiter=maxiter, tol=tol, verbose=verbose)
     elseif alg == :cd
         alginst = CoordinateDescent{T}(maxiter=maxiter, tol=tol, verbose=verbose)
+    elseif alg == :greedycd
+        alginst = GreedyCD{T}(maxiter=maxiter, tol=tol, verbose=verbose)
     else
         throw(ArgumentError("Invalid algorithm."))
     end

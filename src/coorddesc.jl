@@ -76,14 +76,18 @@ struct CoordinateDescentUpd{T} <: NMFUpdater{T}
 end
 
 mutable struct CoordinateDescentState{T}
+    WH::Matrix{T}
     violation::T
     violation_init::Union{Nothing, T}
+    CoordinateDescentState{T}(W, H, violation, violation_init) where {T} = new{T}(W * H, violation, violation_init)
 end
 
-prepare_state(::CoordinateDescentUpd{T}, X, W, H) where {T} =
- CoordinateDescentState(zero(T), nothing)
-evaluate_objv(::CoordinateDescentUpd{T}, s::CoordinateDescentState, X, W, H) where {T} = 
-    s.violation / (s.violation_init === nothing ? oneunit(T) : s.violation_init)
+prepare_state(::CoordinateDescentUpd{T}, X, W, H) where T = CoordinateDescentState{T}(W, H, zero(T), nothing)
+
+function evaluate_objv(::CoordinateDescentUpd{T}, s::CoordinateDescentState{T}, X, W, H) where T
+    mul!(s.WH, W, H)
+    convert(T, 0.5) * sqL2dist(X, s.WH)
+end
 
 "Updates W only"
 function _update_coord_descent!(X, W, H, l1_reg, l2_reg, shuffle)

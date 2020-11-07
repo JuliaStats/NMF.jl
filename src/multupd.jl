@@ -75,7 +75,7 @@ struct MultUpdMSE_State{T}
 end
 
 prepare_state(::MultUpdMSE{T}, X, W, H) where {T} = MultUpdMSE_State{T}(X, W, H)
-evaluate_objv(::MultUpdMSE, s::MultUpdMSE_State, X, W, H) = sqL2dist(X, s.WH)
+evaluate_objv(::MultUpdMSE{T}, s::MultUpdMSE_State{T}, X, W, H) where T = convert(T, 0.5) * sqL2dist(X, s.WH)
 
 function update_wh!(upd::MultUpdMSE{T}, s::MultUpdMSE_State{T}, X, W::Matrix{T}, H::Matrix{T}) where T
 

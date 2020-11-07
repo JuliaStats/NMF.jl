@@ -16,6 +16,7 @@ A Julia package for non-negative matrix factorization (NMF).
 - Lee & Seung's Multiplicative Update (for both MSE & Divergence objectives)
 - (Naive) Projected Alternate Least Squared
 - ALS Projected Gradient Methods
+- Coordinate Descent Methods
 - Random Initialization
 - NNDSVD Initialization
 - Sparse NMF
@@ -74,6 +75,7 @@ The function supports the following keyword arguments:
     - ``projals``:  (Naive) Projected Alternate Least Square
     - ``alspgrad``:  Alternate Least Square using Projected Gradient Descent
     - ``cd``: Coordinate Descent solver that uses Fast Hierarchical Alternating Least Squares (implemetation similar to scikit-learn)
+    - ``greedycd``: Greedy Coordinate Descent
 
 - ``maxiter``: Maximum number of iterations (default = ``100``).
 
@@ -196,6 +198,21 @@ The matrices ``W`` and ``H`` are updated in place.
                       shuffle::Bool=false)       # if true, randomize the order of coordinates in the CD solver
     ```
 
+- **Greedy Coordinate Descent**
+
+    Reference: Cho-Jui Hsieh and Inderjit S. Dhillon. Fast coordinate descent methods with variable selection for non-negative matrix factorization. In Proceedings of the 17th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, 1064–1072 (2011).
+    
+    This algorithm is a fast coordinate descent method with variable selection. 
+    Both ``W`` and ``H`` need to be initialized.
+
+    ```julia
+    GreedyCD(maxiter::Integer=100,  # maximum number of iterations (in main procedure)
+             verbose::Bool=false,   # whether to show procedural information
+             tol::Real=1.0e-6,      # tolerance of changes on W and H upon convergence
+             lambda_w::Real=0.0,    # L1 regularization coefficient for W
+             lambda_h::Real=0.0)    # L1 regularization coefficient for H
+    ```
+
 ## Examples
 
 Here are examples that demonstrate how to use this package to factorize a non-negative dense matrix.
@@ -241,7 +258,7 @@ NMF.solve!(NMF.ProjectedALS{Float64}(maxiter=50), X, W, H)
 import NMF
 
  # initialize
-W, H = NMF.nndsvdar(X, 5)
+W, H = NMF.nndsvd(X, 5, variant=:ar)
 
  # optimize 
 NMF.solve!(NMF.ALSPGrad{Float64}(maxiter=50, tolg=1.0e-6), X, W, H)
@@ -253,9 +270,21 @@ NMF.solve!(NMF.ALSPGrad{Float64}(maxiter=50, tolg=1.0e-6), X, W, H)
 import NMF
 
  # initialize
-W, H = NMF.nndsvdar(X, 5)
+W, H = NMF.nndsvd(X, 5, variant=:ar)
 
  # optimize 
 NMF.solve!(NMF.CoordinateDescent{Float64}(maxiter=50, α=0.5, l₁ratio=0.5), X, W, H)
+```
+
+#### Use Greedy Coordinate Descent
+
+```julia
+import NMF
+
+ # initialize
+W, H = NMF.nndsvd(X, 5, variant=:ar)
+
+ # optimize 
+NMF.solve!(NMF.GreedyCD{Float64}(maxiter=50), X, W, H)
 ```
 
