@@ -1,6 +1,6 @@
 name = "NMF"
 uuid = "6ef6ca0d-6ad7-5ff6-b225-e928bfa0a386"
-version = "0.4.1"
+version = "0.4.2"
 license = "MIT"
 
 [deps]
