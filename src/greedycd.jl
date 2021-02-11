@@ -128,16 +128,7 @@ function _update_GreedyCD!(upd::GreedyCDUpd{T}, s::GreedyCDUpd_State{T}, X,
 
     p_init = convert(T, -1.0)
     for i in 1:n_samples
-        # qi = argmax(D[i, :])
-        qi = 1
-        maxv = D[i, 1]
-        for r in 2:n_components
-            if D[i, r] > maxv
-                qi = r
-                maxv = D[i, r]
-            end
-        end
-
+        qi = argmax(view(D, i, :))
         q[i] = qi
         p_init = max(p_init, D[i, qi])
     end
@@ -163,15 +154,7 @@ function _update_GreedyCD!(upd::GreedyCDUpd{T}, s::GreedyCDUpd_State{T}, X,
                 D[i, r] = - G[i, r] * S[i, r] - convert(T, 0.5) * P[r, r] * S[i, r]^2
             end
 
-            # qi = argmax(D[i, :])
-            qi = 1
-            maxv = D[i, 1]
-            for r in 2:n_components
-                if D[i, r] > maxv
-                    qi = r
-                    maxv = D[i, r]
-                end
-            end
+            qi = argmax(view(D, i, :))
         end
         q[i] = qi
     end
