@@ -37,7 +37,7 @@ struct GreedyCDUpd{T} <: NMFUpdater{T}
     lambda_h::T
 end
 
-mutable struct GreedyCDUpd_State{T}
+struct GreedyCDUpd_State{T}
     WH::Matrix{T}
     PWW::Matrix{T}
     PHH::Matrix{T}
@@ -51,12 +51,12 @@ mutable struct GreedyCDUpd_State{T}
     SH::Matrix{T}
     DW::Matrix{T}
     DH::Matrix{T}
-    qW::Array{Int}
-    qH::Array{Int}
+    qW::Vector{Int}
+    qH::Vector{Int}
     
     function GreedyCDUpd_State{T}(X, W::Matrix{T}, H::Matrix{T}) where T
         p, n, k = nmf_checksize(X, W, H)
-        new{T}(W * H, 
+        new{T}(Matrix{T}(undef, p, n),
                Matrix{T}(undef, k, k),
                Matrix{T}(undef, k, k),
                Matrix{T}(undef, p, k),
@@ -69,12 +69,12 @@ mutable struct GreedyCDUpd_State{T}
                Matrix{T}(undef, n, k),
                Matrix{T}(undef, p, k),
                Matrix{T}(undef, n, k), 
-               Array{Int}(undef, p),
-               Array{Int}(undef, n))
+               Vector{Int}(undef, p),
+               Vector{Int}(undef, n))
     end
 end
 
-prepare_state(::GreedyCDUpd{T}, X, W, H) where {T} = GreedyCDUpd_State{T}(X, W, H)
+prepare_state(::GreedyCDUpd{T}, X, W, H) where T = GreedyCDUpd_State{T}(X, W, H)
 
 function evaluate_objv(u::GreedyCDUpd{T}, s::GreedyCDUpd_State{T}, X, W, H) where T
     mul!(s.WH, W, H)
@@ -114,7 +114,10 @@ function _update_GreedyCD!(upd::GreedyCDUpd{T}, s::GreedyCDUpd_State{T}, X,
     mul!(P, transpose(Ht), Ht)
     mul!(Z, X, Ht) 
     mul!(G, W, P)
-    G = G .- Z .+ lambda
+    G .-= Z
+    if lambda > zero(T)
+        G .+= lambda
+    end
 
     for r in 1:n_components
         for i in 1:n_samples
@@ -125,7 +128,7 @@ function _update_GreedyCD!(upd::GreedyCDUpd{T}, s::GreedyCDUpd_State{T}, X,
 
     p_init = convert(T, -1.0)
     for i in 1:n_samples
-        qi = argmax(D[i, :])
+        qi = argmax(view(D, i, :))
         q[i] = qi
         p_init = max(p_init, D[i, qi])
     end
@@ -134,23 +137,26 @@ function _update_GreedyCD!(upd::GreedyCDUpd{T}, s::GreedyCDUpd_State{T}, X,
     nu = convert(T, 0.001)
 
     for i in 1:n_samples
+        qi = q[i]
         for _ in 1:n_components^2
-            qi = q[i]
             if D[i, qi] < nu * p_init
                 break
             end
 
-            s = S[i, qi]
-            Wnew[i, qi] += s
-            G[i, :] = G[i, :] .+ (s .* P[qi, :])
+            Wnew[i, qi] += S[i, qi]
+
+            for r in 1:n_components
+                G[i, r] += S[i, qi] * P[qi, r]
+            end
 
             for r in 1:n_components
                 S[i, r] = max(zero(T), W[i, r] - G[i, r] / (eps(T) + P[r, r])) - W[i, r]
                 D[i, r] = - G[i, r] * S[i, r] - convert(T, 0.5) * P[r, r] * S[i, r]^2
             end
 
-            q[i] = argmax(D[i, :])
+            qi = argmax(view(D, i, :))
         end
+        q[i] = qi
     end
     copyto!(W, W + Wnew)
     projectnn!(W) # countermeasure on rounding error
