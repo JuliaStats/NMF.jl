@@ -17,14 +17,14 @@ for T in (Float64, Float32)
     # test update of H
 
     H = rand(T, k, n)
-    NMF.alspgrad_updateh!(X, Wg, H; maxiter=200)
+    NMF.alspgrad_updateh!(X, Wg, H; maxiter=1000, tolg=eps(T))
     @test all(H .>= 0.0)
     @test H ≈ Hg atol=eps(T)^(1/4)
 
     # test update of W
 
     W = rand(T, p, k)
-    NMF.alspgrad_updatew!(X, W, Hg; maxiter=200)
+    NMF.alspgrad_updatew!(X, W, Hg; maxiter=1000, tolg=eps(T))
     @test all(W .>= 0.0)
     @test W ≈ Wg atol=eps(T)^(1/4)
 
