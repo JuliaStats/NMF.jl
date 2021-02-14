@@ -81,6 +81,8 @@ The function supports the following keyword arguments:
 
 - ``tol``: tolerance of changes upon convergence (default = ``1.0e-6``).
 
+- ``replicates``: Number of times to repeat factorization (default = ``1``).
+
 - ``verbose``: whether to show procedural information (default = ``false``).
 
 
