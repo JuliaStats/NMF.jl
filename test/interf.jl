@@ -14,4 +14,9 @@ for T in (Float64, Float32)
             ret = NMF.nnmf(X, k, alg=alg, init=init)
         end
     end
+
+    # replicates test
+    ret3 = NMF.nnmf(X, k, replicates=3)
+    ret5 = NMF.nnmf(X, k, replicates=5)
+    @test ret3.objvalue > ret5.objvalue
 end
