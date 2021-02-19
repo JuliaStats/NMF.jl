@@ -42,7 +42,7 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
     elseif init == :nndsvdar
         W, H = nndsvd(X, k; variant=:ar, zeroh=!initH)
     elseif init == :custom
-        W, H = copy(W0), copy(H0)
+        W, H = W0, H0
     else
         throw(ArgumentError("Invalid value for init."))
     end

@@ -87,6 +87,8 @@ The function supports the following keyword arguments:
 - ``W0``: Option for custom initialization (default = ``nothing``)
 
 - ``H0``: Option for custom initialization (default = ``nothing``)
+   
+  **Note:** ``W0`` and ``H0`` may be overwritten. If one needs to avoid it, please pass in copies themselves.
 
 - ``verbose``: whether to show procedural information (default = ``false``).
 
