@@ -6,6 +6,8 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
               maxiter::Integer=100,
               tol::Real=cbrt(eps(T)/100),
               replicates::Integer=1,
+              W0::Union{AbstractMatrix{T}, Nothing}=nothing,
+              H0::Union{AbstractMatrix{T}, Nothing}=nothing,
               verbose::Bool=false) where T
 
     eltype(X) <: Number && all(t -> t >= zero(T), X) || throw(ArgumentError("The elements of X must be non-negative."))
@@ -14,6 +16,18 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
     k <= min(p, n) || throw(ArgumentError("The value of k should not exceed min(size(X))."))
 
     replicates >= 1 || throw(ArgumentError("The value of replicates must be positive."))
+
+    if init == :custom 
+        W0 !== nothing && H0 !== nothing || throw(ArgumentError("To use :custom initialization, set W0 and H0."))
+        eltype(W0) <: Number && all(t -> t >= zero(T), W0) || throw(ArgumentError("The elements of W0 must be non-negative."))
+        p0, k0 = size(W0)
+        p == p0 && k == k0 || throw(ArgumentError("Invalid size for W0."))
+        eltype(H0) <: Number && all(t -> t >= zero(T), H0) || throw(ArgumentError("The elements of H0 must be non-negative."))
+        k0, n0 = size(H0)
+        k == k0 && n == n0 || throw(ArgumentError("Invalid size for H0."))
+    else
+        W0 === nothing && H0 === nothing || @warn "Ignore W0 and H0 except for :custom initialization."
+    end
 
     # determine whether H needs to be initialized
     initH = alg != :projals
@@ -27,6 +41,8 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
         W, H = nndsvd(X, k; variant=:a, zeroh=!initH)
     elseif init == :nndsvdar
         W, H = nndsvd(X, k; variant=:ar, zeroh=!initH)
+    elseif init == :custom
+        W, H = W0, H0
     else
         throw(ArgumentError("Invalid value for init."))
     end
@@ -50,12 +66,16 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
 
     # run optimization
     ret = solve!(alginst, X, W, H)
-    
+
+    # replicates
+    minobjv = ret.objvalue
     for _ in 2:replicates
-        if ret.converged
-            break
+        W, H = randinit(X, k; zeroh=!initH, normalize=true)
+        tmp = solve!(alginst, X, W, H)
+        if minobjv > tmp.objvalue
+            ret = tmp
+            minobjv = tmp.objvalue
         end
-        ret = solve!(alginst, X, ret.W, ret.H)
     end
 
     return ret

@@ -65,6 +65,7 @@ The function supports the following keyword arguments:
     - ``nndsvd``:  standard version of NNDSVD
     - ``nndsvda``:  NNDSVDa variant
     - ``nndsvdar``:  NNDSVDar variant  
+    - ``custom``: use custom matrices ``W0`` and ``H0`` 
                 
 - ``alg``:  A symbol that indicates the factorization algorithm (default = ``:alspgrad``).
 
@@ -82,7 +83,12 @@ The function supports the following keyword arguments:
 - ``tol``: tolerance of changes upon convergence (default = ``1.0e-6``).
 
 - ``replicates``: Number of times to perform factorization (default = ``1``).
-  Further replications are not performed once the algorithm has converged.
+
+- ``W0``: Option for custom initialization (default = ``nothing``)
+
+- ``H0``: Option for custom initialization (default = ``nothing``)
+   
+  **Note:** ``W0`` and ``H0`` may be overwritten. If one needs to avoid it, please pass in copies themselves.
 
 - ``verbose``: whether to show procedural information (default = ``false``).
 
