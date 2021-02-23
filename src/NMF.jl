@@ -3,8 +3,9 @@ module NMF
     using Statistics
     using Printf
     using LinearAlgebra
-    using NonNegLeastSquares
+    # using NonNegLeastSquares
     using Random
+    using Distributed # # temporarily used
 
     export nnmf
 
