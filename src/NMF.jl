@@ -5,7 +5,7 @@ module NMF
     using LinearAlgebra
     # using NonNegLeastSquares
     using Random
-    using Distributed # # temporarily used
+    using Distributed # temporarily used
 
     export nnmf
 
