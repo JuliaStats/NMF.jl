@@ -2,9 +2,11 @@ using NMF
 using Test
 using Random
 using LinearAlgebra
+using StatsBase
 
 tests = ["utils",
          "initialization",
+         "spa",
          "multupd", 
          "alspgrad",
          "coorddesc",

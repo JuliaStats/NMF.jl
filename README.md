@@ -20,6 +20,7 @@ A Julia package for non-negative matrix factorization (NMF).
 - Random Initialization
 - NNDSVD Initialization
 - Sparse NMF
+- Separable NMF
 
 #### To do
 
@@ -65,6 +66,7 @@ The function supports the following keyword arguments:
     - ``nndsvd``:  standard version of NNDSVD
     - ``nndsvda``:  NNDSVDa variant
     - ``nndsvdar``:  NNDSVDar variant  
+    - ``spa``: Successive Projection Algorithm
     - ``custom``: use custom matrices ``W0`` and ``H0`` 
                 
 - ``alg``:  A symbol that indicates the factorization algorithm (default = ``:alspgrad``).
@@ -77,6 +79,7 @@ The function supports the following keyword arguments:
     - ``alspgrad``:  Alternate Least Square using Projected Gradient Descent
     - ``cd``: Coordinate Descent solver that uses Fast Hierarchical Alternating Least Squares (implemetation similar to scikit-learn)
     - ``greedycd``: Greedy Coordinate Descent
+    - ``spa``: Successive Projection Algorithm
 
 - ``maxiter``: Maximum number of iterations (default = ``100``).
 
@@ -84,9 +87,9 @@ The function supports the following keyword arguments:
 
 - ``replicates``: Number of times to perform factorization (default = ``1``).
 
-- ``W0``: Option for custom initialization (default = ``nothing``)
+- ``W0``: Option for custom initialization (default = ``nothing``).
 
-- ``H0``: Option for custom initialization (default = ``nothing``)
+- ``H0``: Option for custom initialization (default = ``nothing``).
    
   **Note:** ``W0`` and ``H0`` may be overwritten. If one needs to avoid it, please pass in copies themselves.
 
@@ -128,6 +131,19 @@ The function supports the following keyword arguments:
 
     - ``zeroh``: have ``H`` initialized when it is set to ``true``, or set ``H`` to all zeros when it is set to ``false``.
     - ``variant``: the variant of the algorithm. Default is ``std``, meaning to use the standard version, which would generate a rather sparse ``W``. Other values are ``a`` and ``ar``, respectively corresponding to the variants: *NNDSVDa* and *NNDSVDar*. Particularly, ``ar`` is recommended for dense NMF.
+
+
+- **NMF.spa**(X, k)
+
+    Use the *Successive Projection Algorithm (SPA)* to initialize ``W`` and ``H``. 
+    
+    Reference: N. Gillis and S. A. Vavasis, Fast and robust recursive algorithms for separable nonnegative matrix factorization, IEEE Transactions on Pattern Analysis and Machine Intelligence, vol. 36, no. 4, pp. 698-714, 2013. 
+    
+    Usage: 
+    
+    ```julia
+    W, H = NMF.spa(X, k)
+    ```
 
 
 ## Factorization Algorithms
@@ -221,6 +237,16 @@ The matrices ``W`` and ``H`` are updated in place.
              lambda_w::Real=0.0,    # L1 regularization coefficient for W
              lambda_h::Real=0.0)    # L1 regularization coefficient for H
     ```
+    
+- **Successive Projection Algorithm for Separable NMF**
+
+    Reference: N. Gillis and S. A. Vavasis, "Fast and robust recursive algorithms for separable nonnegative matrix factorization," IEEE Transactions on Pattern Analysis and Machine Intelligence, vol. 36, no. 4, pp. 698-714, 2013. 
+    
+    A separable matrix X can be written as ``X = WH = W[I V]P``, where ``W`` has rank ``k``, ``I`` is the identity matrix, the sum of the entries of each column of ``V`` is at most one, and ``P`` is a permutation matrix to arange the columns of ``[I V]`` randomly. Separable NMF aims to decompose a separable matrix ``X`` into two nonnegative factor matrices ``W`` and ``H``, so that ``WH`` is equal to ``X``. This algorithm is used for separable NMF. Both ``W`` and ``H`` need to be initialized by ``init=:spa``.
+
+    ```julia
+    SPA(obj::Symbol=:mse)   # objective :mse or :div
+    ```
 
 ## Examples
 
@@ -297,3 +323,13 @@ W, H = NMF.nndsvd(X, 5, variant=:ar)
 NMF.solve!(NMF.GreedyCD{Float64}(maxiter=50), X, W, H)
 ```
 
+#### Use Successive Projection Algorithm for Separable NMF
+
+```julia
+import NMF
+ # initialize
+W, H = NMF.spa(X, 5)
+
+ # optimize 
+NMF.solve!(NMF.SPA{Float64}(obj=:mse), X, W, H)
+```

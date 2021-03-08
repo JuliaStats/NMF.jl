@@ -10,7 +10,7 @@ for T in (Float64, Float32)
     X = Wg * Hg
 
     for alg in (:multmse, :multdiv, :projals, :alspgrad, :cd, :greedycd)
-        for init in (:random, :nndsvd, :nndsvda, :nndsvdar)
+        for init in (:random, :nndsvd, :nndsvda, :nndsvdar, :spa)
             ret = NMF.nnmf(X, k, alg=alg, init=init)
         end
     end
@@ -18,4 +18,7 @@ for T in (Float64, Float32)
     # replicates test
     rep = NMF.nnmf(X, k, replicates=10, maxiter=10, alg=:multmse)
     ret = NMF.nnmf(X, k, W0=rep.W, H0=rep.H, init=:custom)
+
+    # spa test 
+    ret = NMF.nnmf(X, k, alg=:spa, init=:spa)
 end

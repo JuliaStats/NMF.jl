@@ -3,6 +3,9 @@ module NMF
     using Statistics
     using Printf
     using LinearAlgebra
+    # using NonNegLeastSquares
+    using Random
+    using Distributed # temporarily used
 
     export nnmf
 
@@ -10,6 +13,7 @@ module NMF
     include("utils.jl")
 
     include("initialization.jl")
+    include("spa.jl")
     include("multupd.jl")
     include("projals.jl")
     include("alspgrad.jl")
