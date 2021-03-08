@@ -115,7 +115,7 @@ function _alspgrad_updateh!(X,                      # size (p, n)
     # main loop
     t = 0
     converged = false
-    to_decr = true
+    decr_alpha = true
     α = one(T) / one(eltype(G))
     while !converged && t < maxiter
         t += 1
@@ -131,9 +131,6 @@ function _alspgrad_updateh!(X,                      # size (p, n)
         if pgnrm < tolg
             converged = true
         end
-
-        αmax = maxstep(G, H)
-        α = min(α, (β+3eps(β))*αmax)
 
         # back-tracking
         it = 0
@@ -158,28 +155,24 @@ function _alspgrad_updateh!(X,                      # size (p, n)
                 suff_decr = ((1 - σ) * dv1 + convert(T, 0.5) * dv2) < 0
 
                 if it == 1
-                    to_decr = !suff_decr
+                    decr_alpha = !suff_decr
+                    copyto!(Hp, H)
                 end
 
-                if to_decr
-                    if !suff_decr
-                        α *= β
-                    else
+                if decr_alpha
+                    if suff_decr
                         copyto!(H, Hn)
                         break
+                    else
+                        α *= β
                     end
                 else
-                    if suff_decr
-                        if α/β < αmax
-                            copyto!(Hp, Hn)
-                            α /= β
-                        else
-                            copyto!(H, Hn)
-                            break
-                        end
-                    else
+                    if !suff_decr || isapprox(Hp, Hn, atol=eps(T))
                         copyto!(H, Hp)
                         break
+                    else
+                        α /= β
+                        copyto!(Hp, Hn)
                     end
                 end
             end
@@ -194,7 +187,7 @@ function _alspgrad_updateh!(X,                      # size (p, n)
                 t, objv, objv - preobjv, pgnrm, α, it)
         end
     end
-    return H
+    return H, t
 end
 
 
@@ -278,7 +271,7 @@ function _alspgrad_updatew!(X,                      # size (p, n)
     # main loop
     t = 0
     converged = false
-    to_decr = true
+    decr_alpha = true
     α = one(T) / one(eltype(G))
     while !converged && t < maxiter
         t += 1
@@ -294,9 +287,6 @@ function _alspgrad_updatew!(X,                      # size (p, n)
         if pgnrm < tolg
             converged = true
         end
-
-        αmax = maxstep(G, W)
-        α = min(α, (β+3eps(β))*αmax)
 
         # back-tracking
         it = 0
@@ -321,28 +311,24 @@ function _alspgrad_updatew!(X,                      # size (p, n)
                 suff_decr = ((1 - σ) * dv1 + convert(T, 0.5) * dv2) < 0
 
                 if it == 1
-                    to_decr = !suff_decr
+                    decr_alpha = !suff_decr
+                    copyto!(Wp, W)
                 end
 
-                if to_decr
-                    if !suff_decr
-                        α *= β
-                    else
+                if decr_alpha
+                    if suff_decr
                         copyto!(W, Wn)
                         break
+                    else
+                        α *= β
                     end
                 else
-                    if suff_decr
-                        if α/β < αmax
-                            copyto!(Wp, Wn)
-                            α /= β
-                        else
-                            copyto!(W, Wn)
-                            break
-                        end
-                    else
+                    if !suff_decr || isapprox(Wp, Wn, atol=eps(T))
                         copyto!(W, Wp)
                         break
+                    else
+                        α /= β
+                        copyto!(Wp, Wn)
                     end
                 end
             end
@@ -357,7 +343,7 @@ function _alspgrad_updatew!(X,                      # size (p, n)
                 t, objv, objv - preobjv, pgnrm, α, it)
         end
     end
-    return H
+    return H, t
 end
 
 
@@ -383,7 +369,7 @@ mutable struct ALSPGrad{T}
     end
 end
 
-struct ALSPGradUpd{T} <: NMFUpdater{T}
+mutable struct ALSPGradUpd{T} <: NMFUpdater{T}
     maxsubiter::Int
     tolg::T
 end
@@ -412,15 +398,22 @@ function update_wh!(upd::ALSPGradUpd, s::ALSPGradUpd_State, X, W, H)
 
     # update H
     set_w!(s.uhstate, X, W)
-    _alspgrad_updateh!(X, W, H, s.uhstate,
-        upd.maxsubiter, 20, upd.tolg, convert(T, 0.2), convert(T, 0.01), false)
+    iterH = _alspgrad_updateh!(X, W, H, s.uhstate,
+        upd.maxsubiter, 20, upd.tolg, convert(T, 0.2), convert(T, 0.01), false)[2]
+
+    if iterH == 1
+        upd.tolg *= 0.1
+    end
 
     # update W
     set_h!(s.uwstate, X, H)
-    _alspgrad_updatew!(X, W, H, s.uwstate,
-        upd.maxsubiter, 20, upd.tolg, convert(T, 0.2), convert(T, 0.01), false)
+    iterW = _alspgrad_updatew!(X, W, H, s.uwstate,
+        upd.maxsubiter, 20, upd.tolg, convert(T, 0.2), convert(T, 0.01), false)[2]
+
+    if iterW == 1
+        upd.tolg *= 0.1
+    end
 
     # update WH
     mul!(s.WH, W, H)
 end
-
