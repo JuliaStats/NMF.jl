@@ -25,6 +25,7 @@ mutable struct CoordinateDescent{T}
     maxiter::Int           # maximum number of iterations (in main procedure)
     verbose::Bool          # whether to show procedural information
     tol::T                 # tolerance of changes on W and H upon convergence
+    update_H::Bool         # whether to update H
     α::T                   # constant that multiplies the regularization terms
     l₁ratio::T             # select whether the regularization affects the components (H), 
                            # the transformation (W), both or none of them 
@@ -35,17 +36,18 @@ mutable struct CoordinateDescent{T}
     function CoordinateDescent{T}(;maxiter::Integer=100,
                               verbose::Bool=false,
                               tol::Real=cbrt(eps(T)),
-                              α::Real=T(0.0),
+                              update_H::Bool=true,
+                              α::Real=zero(T),
                               regularization=:both,
                               l₁ratio::Real=zero(T),
                               shuffle::Bool=false) where T
-        new{T}(maxiter, verbose, tol, α, l₁ratio, regularization, shuffle)
+        new{T}(maxiter, verbose, tol, update_H, α, l₁ratio, regularization, shuffle)
     end
 end
 
 
 solve!(alg::CoordinateDescent{T}, X, W, H) where {T} =
-    nmf_skeleton!(CoordinateDescentUpd{T}(alg.α, alg.l₁ratio, alg.regularization, alg.shuffle),
+    nmf_skeleton!(CoordinateDescentUpd{T}(alg.α, alg.l₁ratio, alg.regularization, alg.shuffle, alg.update_H),
                   X, W, H, alg.maxiter, alg.verbose, alg.tol)
 
 
@@ -55,7 +57,8 @@ struct CoordinateDescentUpd{T} <: NMFUpdater{T}
     l₁H::T
     l₂H::T
     shuffle::Bool
-    function CoordinateDescentUpd{T}(α::T, l₁ratio::T, regularization::Symbol, shuffle::Bool) where {T}
+    update_H::Bool
+    function CoordinateDescentUpd{T}(α::T, l₁ratio::T, regularization::Symbol, shuffle::Bool, update_H::Bool) where {T}
         αW = zero(T)
         αH = zero(T)
 
@@ -71,7 +74,8 @@ struct CoordinateDescentUpd{T} <: NMFUpdater{T}
                αW*(1-l₁ratio),
                αH*l₁ratio,
                αH*(1-l₁ratio),
-               shuffle)
+               shuffle,
+               update_H)
     end
 end
 
@@ -137,13 +141,18 @@ end
 
 function update_wh!(upd::CoordinateDescentUpd{T}, s::CoordinateDescentState{T},
     X::AbstractArray{T}, W::AbstractArray{T}, H::AbstractArray{T}) where T
-    Ht = transpose(H)
-
     violation = zero(T)
+
+    # update W
     violation += _update_coord_descent!(X, W, H, upd.l₁W, upd.l₂W, upd.shuffle)
-    Wt = transpose(W)
-    violation += _update_coord_descent!(PermutedDimsArray(X, (2,1)), Ht, Wt,
-    upd.l₁H, upd.l₂H, upd.shuffle)
+
+    # update H
+    if upd.update_H
+        Wt = transpose(W)
+        Ht = transpose(H)
+        violation += _update_coord_descent!(PermutedDimsArray(X, (2,1)), Ht, Wt,
+        upd.l₁H, upd.l₂H, upd.shuffle)
+    end
 
     s.violation = violation
     if s.violation_init !== nothing

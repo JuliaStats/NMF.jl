@@ -93,6 +93,8 @@ The function supports the following keyword arguments:
    
   **Note:** ``W0`` and ``H0`` may be overwritten. If one needs to avoid it, please pass in copies themselves.
 
+- ``update_H``: Option for specifying whether to update H (default = ``true``).
+
 - ``verbose``: whether to show procedural information (default = ``false``).
 
 
@@ -174,6 +176,7 @@ The matrices ``W`` and ``H`` are updated in place.
                maxiter::Integer=100,    # maximum number of iterations
                verbose::Bool=false,     # whether to show procedural information
                tol::Real=1.0e-6,        # tolerance of changes on W and H upon convergence
+               update_H::Bool=true,     # whether to update H
                lambda_w::Real=0.0,      # L1 regularization coefficient for W
                lambda_h::Real=0.0)      # L1 regularization coefficient for H
     ```
@@ -189,6 +192,7 @@ The matrices ``W`` and ``H`` are updated in place.
     ProjectedALS(maxiter::Integer=100,    # maximum number of iterations
                  verbose::Bool=false,     # whether to show procedural information
                  tol::Real=1.0e-6,        # tolerance of changes on W and H upon convergence
+                 update_H::Bool=true,     # whether to update H
                  lambda_w::Real=1.0e-6,   # L2 regularization coefficient for W
                  lambda_h::Real=1.0e-6)   # L2 regularization coefficient for H
     ```
@@ -204,6 +208,7 @@ The matrices ``W`` and ``H`` are updated in place.
              maxsubiter::Integer=200,   # maximum number of iterations in solving each sub-problem
              tol::Real=1.0e-6,          # tolerance of changes on W and H upon convergence
              tolg::Real=1.0e-4,         # tolerable gradient norm in sub-problem (first-order optimality)
+             update_H::Bool=true,       # whether to update H
              verbose::Bool=false)       # whether to show procedural information
     ```
 
@@ -217,6 +222,7 @@ The matrices ``W`` and ``H`` are updated in place.
     CoordinateDescent(maxiter::Integer=100,      # maximum number of iterations (in main procedure)
                       verbose::Bool=false,       # whether to show procedural information
                       tol::Real=1.0e-6,          # tolerance of changes on W and H upon convergence
+                      update_H::Bool=true,       # whether to update H
                       α::Real=0.0,               # constant that multiplies the regularization terms
                       regularization=:both,      # select whether the regularization affects the components (H), the transformation (W), both or none of them (:components, :transformation, :both, :none)
                       l₁ratio::Real=0.0,         # l1 / l2 regularization mixing parameter (in [0; 1])
@@ -234,6 +240,7 @@ The matrices ``W`` and ``H`` are updated in place.
     GreedyCD(maxiter::Integer=100,  # maximum number of iterations (in main procedure)
              verbose::Bool=false,   # whether to show procedural information
              tol::Real=1.0e-6,      # tolerance of changes on W and H upon convergence
+             update_H::Bool=true,   # whether to update H
              lambda_w::Real=0.0,    # L1 regularization coefficient for W
              lambda_h::Real=0.0)    # L1 regularization coefficient for H
     ```

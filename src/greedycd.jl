@@ -11,12 +11,14 @@ mutable struct GreedyCD{T}
     maxiter::Int           # maximum number of iterations (in main procedure)
     verbose::Bool          # whether to show procedural information
     tol::T                 # tolerance of changes on W and H upon convergence
+    update_H::Bool         # whether to update H
     lambda_w::T            # L1 regularization coefficient for W
     lambda_h::T            # L1 regularization coefficient for H
 
     function GreedyCD{T}(;maxiter::Integer=100,
                           verbose::Bool=false,
                           tol::Real=cbrt(eps(T)),
+                          update_H::Bool=true,
                           lambda_w::Real=zero(T),
                           lambda_h::Real=zero(T)) where T
 
@@ -24,15 +26,16 @@ mutable struct GreedyCD{T}
         tol > 0 || throw(ArgumentError("tol must be positive."))
         lambda_w >= 0 || throw(ArgumentError("lambda_w must be non-negative."))
         lambda_h >= 0 || throw(ArgumentError("lambda_h must be non-negative."))
-        new{T}(maxiter, verbose, tol, lambda_w, lambda_h)
+        new{T}(maxiter, verbose, tol, update_H, lambda_w, lambda_h)
     end
 end
 
 solve!(alg::GreedyCD{T}, X, W, H) where T = 
-    nmf_skeleton!(GreedyCDUpd{T}(alg.lambda_w, alg.lambda_h), X, W, H, alg.maxiter, alg.verbose, alg.tol)
+    nmf_skeleton!(GreedyCDUpd{T}(alg.update_H, alg.lambda_w, alg.lambda_h), X, W, H, alg.maxiter, alg.verbose, alg.tol)
 
 
 struct GreedyCDUpd{T} <: NMFUpdater{T}
+    update_H::Bool
     lambda_w::T
     lambda_h::T
 end
@@ -168,6 +171,8 @@ function update_wh!(upd::GreedyCDUpd{T}, s::GreedyCDUpd_State{T}, X, W::Matrix{T
     _update_GreedyCD!(upd, s, X, W, Ht, true)
 
     # update H
-    Xt = transpose(X)
-    _update_GreedyCD!(upd, s, Xt, Ht, W, false)
+    if upd.update_H
+        Xt = transpose(X)
+        _update_GreedyCD!(upd, s, Xt, Ht, W, false)
+    end
 end
