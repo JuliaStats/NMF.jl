@@ -50,18 +50,21 @@ function _nndsvd!(X, W, Ht, inith::Bool, variant::Int)
 
         if inith
             if mp >= mn
-                scalepos!(view(W,:,j), x, 1 / xpnrm, vj)
-                scalepos!(view(Ht,:,j), y, s[j] * mp / ypnrm, vj)
+                ss = sqrt(s[j] * mp)
+                scalepos!(view(W,:,j), x, ss / xpnrm, vj)
+                scalepos!(view(Ht,:,j), y, ss / ypnrm, vj)
             else
                 ss = sqrt(s[j] * mn)
-                scaleneg!(view(W,:,j), x, 1 / xnnrm, vj)
-                scaleneg!(view(Ht,:,j), y, s[j] * mn / ynnrm, vj)
+                scaleneg!(view(W,:,j), x, ss / xnnrm, vj)
+                scaleneg!(view(Ht,:,j), y, ss / ynnrm, vj)
             end
         else
             if mp >= mn
-                scalepos!(view(W,:,j), x, 1 / xpnrm, vj)
+                ss = sqrt(s[j] * mp)
+                scalepos!(view(W,:,j), x, ss / xpnrm, vj)
             else
-                scaleneg!(view(W,:,j), x, 1 / xnnrm, vj)
+                ss = sqrt(s[j] * mn)
+                scaleneg!(view(W,:,j), x, ss / xnnrm, vj)
             end
         end
     end
