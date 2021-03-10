@@ -1,9 +1,7 @@
 
 # random initialization
 
-function randinit(nrows::Integer, ncols::Integer, k::Integer; normalize::Bool=false, zeroh::Bool=false)
-    T = eltype(X)
-
+function randinit(nrows::Integer, ncols::Integer, k::Integer, T::DataType; normalize::Bool=false, zeroh::Bool=false)
     W = rand(T, nrows, k)
     if normalize
         normalize1_cols!(W)
@@ -13,9 +11,9 @@ function randinit(nrows::Integer, ncols::Integer, k::Integer; normalize::Bool=fa
     return W, H
 end
 
-function randinit(X, k::Integer; normalize::Bool=false, zeroh::Bool=false)
+function randinit(X, k::Integer; normalize::Bool=false, zeroh::Bool=false) 
     p, n = size(X)
-    randinit(p, n, k; normalize=normalize, zeroh=zeroh)
+    randinit(p, n, k, eltype(X); normalize=normalize, zeroh=zeroh)
 end
 
 # NNDSVD: Non-Negative Double Singular Value Decomposition
