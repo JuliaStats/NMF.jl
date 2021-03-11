@@ -69,7 +69,7 @@ The function supports the following keyword arguments:
     - ``spa``: Successive Projection Algorithm
     - ``custom``: use custom matrices ``W0`` and ``H0`` 
                 
-- ``alg``:  A symbol that indicates the factorization algorithm (default = ``:alspgrad``).
+- ``alg``:  A symbol that indicates the factorization algorithm (default = ``:greedycd``).
 
     This argument accepts the following values:
 
