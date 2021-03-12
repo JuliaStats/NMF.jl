@@ -11,6 +11,7 @@ mutable struct MultUpdate{T}
     maxiter::Int                # maximum number of iterations
     verbose::Bool               # whether to show procedural information
     tol::T                      # change tolerance upon convergence
+    update_H::Bool              # whether to update H
     lambda_w::T                 # L1 regularization coefficient for W
     lambda_h::T                 # L1 regularization coefficient for H
 
@@ -18,6 +19,7 @@ mutable struct MultUpdate{T}
                             maxiter::Integer=100,
                             verbose::Bool=false,
                             tol::Real=cbrt(eps(T)),
+                            update_H::Bool=true,
                             lambda_w::Real=zero(T),
                             lambda_h::Real=zero(T),
                             lambda::Union{Real, Nothing}=nothing) where T
@@ -36,22 +38,23 @@ mutable struct MultUpdate{T}
             lambda_w = max(lambda_w, sqrt(eps(T)))
             lambda_h = max(lambda_h, sqrt(eps(T)))
         end
-        new{T}(obj, maxiter, verbose, tol, lambda_w, lambda_h)
+        new{T}(obj, maxiter, verbose, tol, update_H, lambda_w, lambda_h)
     end
 end
 
 function solve!(alg::MultUpdate{T}, X, W, H) where T
 
     if alg.obj == :mse
-        nmf_skeleton!(MultUpdMSE(alg.lambda_w, alg.lambda_h, sqrt(eps(T))), X, W, H, alg.maxiter, alg.verbose, alg.tol)
+        nmf_skeleton!(MultUpdMSE(alg.update_H, alg.lambda_w, alg.lambda_h, sqrt(eps(T))), X, W, H, alg.maxiter, alg.verbose, alg.tol)
     else # alg == :div
-        nmf_skeleton!(MultUpdDiv(alg.lambda_w, alg.lambda_h, sqrt(eps(T))), X, W, H, alg.maxiter, alg.verbose, alg.tol)
+        nmf_skeleton!(MultUpdDiv(alg.update_H, alg.lambda_w, alg.lambda_h, sqrt(eps(T))), X, W, H, alg.maxiter, alg.verbose, alg.tol)
     end
 end
 
 # the multiplicative updating algorithm for MSE objective
 
 struct MultUpdMSE{T} <: NMFUpdater{T}
+    update_H::Bool
     lambda_w::T
     lambda_h::T
     delta::T
@@ -90,14 +93,16 @@ function update_wh!(upd::MultUpdMSE{T}, s::MultUpdMSE_State{T}, X, W::Matrix{T},
     WHHt = s.WHHt
 
     # update H
-    Wt = transpose(W)
-    mul!(WtX, Wt, X)
-    mul!(WtWH, Wt, WH)
+    if upd.update_H
+        Wt = transpose(W)
+        mul!(WtX, Wt, X)
+        mul!(WtWH, Wt, WH)
 
-    @inbounds for i = 1:length(H)
-        H[i] *= (max(zero(T), WtX[i] - lambda_h) / (WtWH[i] + delta))
+        @inbounds for i = 1:length(H)
+            H[i] *= (max(zero(T), WtX[i] - lambda_h) / (WtWH[i] + delta))
+        end
+        mul!(WH, W, H)
     end
-    mul!(WH, W, H)
 
     # update W
     Ht = transpose(H)
@@ -114,6 +119,7 @@ end
 # the multiplicative updating algorithm for divergence objective
 
 struct MultUpdDiv{T} <: NMFUpdater{T}
+    update_H::Bool
     lambda_w::T
     lambda_h::T
     delta::T
@@ -138,7 +144,7 @@ struct MultUpdDiv_State{T}
     end
 end
 
-prepare_state(::MultUpdDiv{T}, X, W, H) where {T} = MultUpdDiv_State{T}(X, W, H)
+prepare_state(::MultUpdDiv{T}, X, W, H) where T = MultUpdDiv_State{T}(X, W, H)
 evaluate_objv(::MultUpdDiv, s::MultUpdDiv_State, X, W, H) = gkldiv(X, s.WH)
 
 function update_wh!(upd::MultUpdDiv{T}, s::MultUpdDiv_State{T}, X, W::Matrix{T}, H::Matrix{T}) where T
@@ -162,15 +168,17 @@ function update_wh!(upd::MultUpdDiv{T}, s::MultUpdDiv_State{T}, X, W::Matrix{T},
     @assert size(Q) == size(X)
 
     # update H
-    @inbounds for i = 1:length(X)
-        Q[i] = X[i] / (WH[i] + delta)
+    if upd.update_H
+        @inbounds for i = 1:length(X)
+            Q[i] = X[i] / (WH[i] + delta)
+        end
+        mul!(WtQ, transpose(W), Q)
+        sum!(fill!(sW, 0), W)
+        @inbounds for j = 1:n, i = 1:k
+            H[i,j] *= (WtQ[i,j] / (sW[i] + lambda_h))
+        end
+        mul!(WH, W, H)
     end
-    mul!(WtQ, transpose(W), Q)
-    sum!(fill!(sW, 0), W)
-    @inbounds for j = 1:n, i = 1:k
-        H[i,j] *= (WtQ[i,j] / (sW[i] + lambda_h))
-    end
-    mul!(WH, W, H)
 
     # update W
     @inbounds for i = 1:length(X)

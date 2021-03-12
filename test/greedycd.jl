@@ -1,8 +1,5 @@
 # some tests for GreedyCD
 
-using NMF
-using Test
-
 p = 5
 n = 8
 k = 3

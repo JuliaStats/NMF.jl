@@ -8,6 +8,7 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
               replicates::Integer=1,
               W0::Union{AbstractMatrix{T}, Nothing}=nothing,
               H0::Union{AbstractMatrix{T}, Nothing}=nothing,
+              update_H::Bool=true,
               verbose::Bool=false) where T
 
     eltype(X) <: Number && all(t -> t >= zero(T), X) || throw(ArgumentError("The elements of X must be non-negative."))
@@ -16,6 +17,10 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
     k <= min(p, n) || throw(ArgumentError("The value of k should not exceed min(size(X))."))
 
     replicates >= 1 || throw(ArgumentError("The value of replicates must be positive."))
+
+    if !update_H && init != :custom
+        @warn "Only W will be updated."
+    end
 
     if init == :custom 
         W0 !== nothing && H0 !== nothing || throw(ArgumentError("To use :custom initialization, set W0 and H0."))
@@ -51,17 +56,17 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
 
     # choose algorithm
     if alg == :projals
-        alginst = ProjectedALS{T}(maxiter=maxiter, tol=tol, verbose=verbose)
+        alginst = ProjectedALS{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H)
     elseif alg == :alspgrad
-        alginst = ALSPGrad{T}(maxiter=maxiter, tol=tol, verbose=verbose)
+        alginst = ALSPGrad{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H)
     elseif alg == :multmse
-        alginst = MultUpdate{T}(obj=:mse, maxiter=maxiter, tol=tol, verbose=verbose)
+        alginst = MultUpdate{T}(obj=:mse, maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H)
     elseif alg == :multdiv
-        alginst = MultUpdate{T}(obj=:div, maxiter=maxiter, tol=tol, verbose=verbose)
+        alginst = MultUpdate{T}(obj=:div, maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H)
     elseif alg == :cd
-        alginst = CoordinateDescent{T}(maxiter=maxiter, tol=tol, verbose=verbose)
+        alginst = CoordinateDescent{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H)
     elseif alg == :greedycd
-        alginst = GreedyCD{T}(maxiter=maxiter, tol=tol, verbose=verbose)
+        alginst = GreedyCD{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H)
     elseif alg == :spa
         if init != :spa
             throw(ArgumentError("Invalid value for init, use :spa instead."))

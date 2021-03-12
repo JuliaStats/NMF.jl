@@ -16,28 +16,31 @@ using LinearAlgebra: copytri!
 using LinearAlgebra.LAPACK: potrs!, potrf!, potri!
 
 mutable struct ProjectedALS{T}
-    maxiter::Int
-    verbose::Bool
-    tol::T
-    lambda_w::T
-    lambda_h::T
+    maxiter::Int            # maximum number of iterations (in main procedure)
+    verbose::Bool           # whether to show procedural information
+    tol::T                  # tolerance of changes on W and H upon convergence
+    update_H::Bool          # whether to update H
+    lambda_w::T             # L2 regularization coefficient for W
+    lambda_h::T             # L2 regularization coefficient for H
 
     function ProjectedALS{T}(;maxiter::Integer=100,
                               verbose::Bool=false,
                               tol::Real=cbrt(eps(T)),
+                              update_H::Bool=true,
                               lambda_w::Real=cbrt(eps(T)),
                               lambda_h::Real=cbrt(eps(T))) where T
 
-        new{T}(maxiter, verbose, tol, lambda_w, lambda_h)
+        new{T}(maxiter, verbose, tol, update_H, lambda_w, lambda_h)
     end
 end
 
 solve!(alg::ProjectedALS, X, W, H) =
-    nmf_skeleton!(ProjectedALSUpd(alg.lambda_w, alg.lambda_h),
+    nmf_skeleton!(ProjectedALSUpd(alg.update_H, alg.lambda_w, alg.lambda_h),
                   X, W, H, alg.maxiter, alg.verbose, alg.tol)
 
 
 struct ProjectedALSUpd{T} <: NMFUpdater{T}
+    update_H::Bool
     lambda_w::T
     lambda_h::T
 end
@@ -84,11 +87,13 @@ function update_wh!(upd::ProjectedALSUpd{T}, s::ProjectedALSUpd_State{T},
     lambda_h = upd.lambda_h
 
     # update H
-    Wt = transpose(W)
-    adddiag!(mul!(WtW, Wt, W), lambda_h)
-    mul!(H, Wt, X)       # H <- W'X
-    pdsolve!(WtW, H)     # H <- inv(WtW) * H
-    projectnn!(H)
+    if upd.update_H
+        Wt = transpose(W)
+        adddiag!(mul!(WtW, Wt, W), lambda_h)
+        mul!(H, Wt, X)       # H <- W'X
+        pdsolve!(WtW, H)     # H <- inv(WtW) * H
+        projectnn!(H)
+    end
 
     # update W
     Ht = transpose(H)

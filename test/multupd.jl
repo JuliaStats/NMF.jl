@@ -1,5 +1,4 @@
-using NMF
-using Test
+# some tests for MultUpdate
 
 p = 5
 n = 8

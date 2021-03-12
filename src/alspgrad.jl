@@ -352,30 +352,34 @@ end
 mutable struct ALSPGrad{T}
     maxiter::Int      # maximum number of main iterations
     maxsubiter::Int   # maximum number of iterations within a sub-routine
-    tol::T      # tolerance of changes on W & H (main)
-    tolg::T     # tolerance of grad norm in sub-routine
+    tol::T            # tolerance of changes on W & H (main)
+    tolg::T           # tolerance of grad norm in sub-routine
+    update_H::Bool    # whether to update H
     verbose::Bool     # whether to show procedural information (main)
 
     function ALSPGrad{T}(;maxiter::Integer=100,
                           maxsubiter::Integer=200,
                           tol::Real=cbrt(eps(T)),
                           tolg::Real=eps(T)^(1/4),
+                          update_H::Bool=true,
                           verbose::Bool=false) where T
         new{T}(maxiter,
                maxsubiter,
                tol,
                tolg,
+               update_H,
                verbose)
     end
 end
 
 mutable struct ALSPGradUpd{T} <: NMFUpdater{T}
+    update_H::Bool
     maxsubiter::Int
     tolg::T
 end
 
 solve!(alg::ALSPGrad, X, W, H) =
-    nmf_skeleton!(ALSPGradUpd(alg.maxsubiter, alg.tolg),
+    nmf_skeleton!(ALSPGradUpd(alg.update_H, alg.maxsubiter, alg.tolg),
                   X, W, H, alg.maxiter, alg.verbose, alg.tol)
 
 
@@ -397,12 +401,14 @@ function update_wh!(upd::ALSPGradUpd, s::ALSPGradUpd_State, X, W, H)
     T = eltype(W)
 
     # update H
-    set_w!(s.uhstate, X, W)
-    iterH = _alspgrad_updateh!(X, W, H, s.uhstate,
-        upd.maxsubiter, 20, upd.tolg, convert(T, 0.2), convert(T, 0.01), false)[2]
+    if upd.update_H
+        set_w!(s.uhstate, X, W)
+        iterH = _alspgrad_updateh!(X, W, H, s.uhstate,
+            upd.maxsubiter, 20, upd.tolg, convert(T, 0.2), convert(T, 0.01), false)[2]
 
-    if iterH == 1
-        upd.tolg *= 0.1
+        if iterH == 1
+            upd.tolg *= 0.1
+        end
     end
 
     # update W
