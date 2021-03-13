@@ -1,19 +1,20 @@
 
 # random initialization
 
-function randinit(X, k::Integer; normalize::Bool=false, zeroh::Bool=false)
-    p, n = size(X)
-    T = eltype(X)
-
-    W = rand(T, p, k)
+function randinit(nrows::Integer, ncols::Integer, k::Integer, T::DataType; normalize::Bool=false, zeroh::Bool=false)
+    W = rand(T, nrows, k)
     if normalize
         normalize1_cols!(W)
     end
 
-    H = zeroh ? zeros(T, k, n) : rand(T, k, n)
+    H = zeroh ? zeros(T, k, ncols) : rand(T, k, ncols)
     return W, H
 end
 
+function randinit(X, k::Integer; normalize::Bool=false, zeroh::Bool=false) 
+    p, n = size(X)
+    randinit(p, n, k, eltype(X); normalize=normalize, zeroh=zeroh)
+end
 
 # NNDSVD: Non-Negative Double Singular Value Decomposition
 #
@@ -50,18 +51,21 @@ function _nndsvd!(X, W, Ht, inith::Bool, variant::Int)
 
         if inith
             if mp >= mn
-                scalepos!(view(W,:,j), x, 1 / xpnrm, vj)
-                scalepos!(view(Ht,:,j), y, s[j] * mp / ypnrm, vj)
+                ss = sqrt(s[j] * mp)
+                scalepos!(view(W,:,j), x, ss / xpnrm, vj)
+                scalepos!(view(Ht,:,j), y, ss / ypnrm, vj)
             else
                 ss = sqrt(s[j] * mn)
-                scaleneg!(view(W,:,j), x, 1 / xnnrm, vj)
-                scaleneg!(view(Ht,:,j), y, s[j] * mn / ynnrm, vj)
+                scaleneg!(view(W,:,j), x, ss / xnnrm, vj)
+                scaleneg!(view(Ht,:,j), y, ss / ynnrm, vj)
             end
         else
             if mp >= mn
-                scalepos!(view(W,:,j), x, 1 / xpnrm, vj)
+                ss = sqrt(s[j] * mp)
+                scalepos!(view(W,:,j), x, ss / xpnrm, vj)
             else
-                scaleneg!(view(W,:,j), x, 1 / xnnrm, vj)
+                ss = sqrt(s[j] * mn)
+                scaleneg!(view(W,:,j), x, ss / xnnrm, vj)
             end
         end
     end
