@@ -81,12 +81,24 @@ end
 
 mutable struct CoordinateDescentState{T}
     WH::Matrix{T}
+    HHt::Matrix{T}
+    XHt::Matrix{T}
+    XtW::Matrix{T}
     violation::T
     violation_init::Union{Nothing, T}
-    CoordinateDescentState{T}(W, H, violation, violation_init) where {T} = new{T}(W * H, violation, violation_init)
+    
+    function CoordinateDescentState{T}(X, W, H, violation, violation_init) where T
+        p, n, k = nmf_checksize(X, W, H)
+        new{T}(W * H, 
+               Matrix{T}(undef, k, k),
+               Matrix{T}(undef, p, k),
+               Matrix{T}(undef, n, k),
+               violation, 
+               violation_init)
+    end
 end
 
-prepare_state(::CoordinateDescentUpd{T}, X, W, H) where T = CoordinateDescentState{T}(W, H, zero(T), nothing)
+prepare_state(::CoordinateDescentUpd{T}, X, W, H) where T = CoordinateDescentState{T}(X, W, H, zero(T), nothing)
 
 function evaluate_objv(::CoordinateDescentUpd{T}, s::CoordinateDescentState{T}, X, W, H) where T
     mul!(s.WH, W, H)
@@ -94,9 +106,17 @@ function evaluate_objv(::CoordinateDescentUpd{T}, s::CoordinateDescentState{T}, 
 end
 
 "Updates W only"
-function _update_coord_descent!(X, W, H, l1_reg, l2_reg, shuffle)
-    HHt = H * H'
-    XHt = X * H'
+function _update_coord_descent!(s::CoordinateDescentState{T}, X, W, H, 
+                                l1_reg, l2_reg, shuffle::Bool, W_flag::Bool) where T
+    Ht = transpose(H)
+    HHt = s.HHt
+    mul!(HHt, H, Ht)
+    if W_flag
+        XHt = s.XHt
+    else
+        XHt = s.XtW
+    end
+    mul!(XHt, X, Ht)
 
     n_components = size(H, 1)
     n_samples = size(W, 1)
@@ -140,18 +160,18 @@ end
 
 
 function update_wh!(upd::CoordinateDescentUpd{T}, s::CoordinateDescentState{T},
-    X::AbstractArray{T}, W::AbstractArray{T}, H::AbstractArray{T}) where T
+                    X::AbstractArray{T}, W::AbstractArray{T}, H::AbstractArray{T}) where T
     violation = zero(T)
 
     # update W
-    violation += _update_coord_descent!(X, W, H, upd.l₁W, upd.l₂W, upd.shuffle)
+    violation += _update_coord_descent!(s, X, W, H, upd.l₁W, upd.l₂W, upd.shuffle, true)
 
     # update H
     if upd.update_H
         Wt = transpose(W)
         Ht = transpose(H)
-        violation += _update_coord_descent!(PermutedDimsArray(X, (2,1)), Ht, Wt,
-        upd.l₁H, upd.l₂H, upd.shuffle)
+        Xt = transpose(X)
+        violation += _update_coord_descent!(s, Xt, Ht, Wt, upd.l₁H, upd.l₂H, upd.shuffle, false)
     end
 
     s.violation = violation
