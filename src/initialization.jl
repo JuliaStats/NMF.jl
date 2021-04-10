@@ -30,7 +30,7 @@ function _nndsvd!(X, W, Ht, inith::Bool, variant::Int)
     T = eltype(W)
 
     # compute randomized SVD
-    (U, s, V) = rsvd(X, k, 10)
+    (U, s, V) = rsvd(X, k)
 
     # main loop
     v0 = variant == 0 ? zero(T) :
