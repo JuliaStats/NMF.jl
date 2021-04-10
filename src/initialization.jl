@@ -29,8 +29,8 @@ function _nndsvd!(X, W, Ht, inith::Bool, variant::Int)
     k = size(W, 2)
     T = eltype(W)
 
-    # compute SVD
-    (U, s, V) = svd(X, full=false)
+    # compute randomized SVD
+    (U, s, V) = rsvd(X, k, 10)
 
     # main loop
     v0 = variant == 0 ? zero(T) :
