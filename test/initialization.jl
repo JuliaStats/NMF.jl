@@ -25,12 +25,14 @@ W, H = NMF.randinit(X, 5; normalize=true)
 
 ## nndsvd
 
+Random.seed!(5678)
 W, H = NMF.nndsvd(X, 5)
 @test size(W) == (8, 5)
 @test size(H) == (5, 12)
 @test all(W .>= 0.0)
 @test all(H .>= 0.0)
 
+Random.seed!(5678)
 W2, H2 = NMF.nndsvd(X, 5; zeroh=true)
 @test size(W) == (8, 5)
 @test size(H) == (5, 12)

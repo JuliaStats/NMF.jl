@@ -5,6 +5,7 @@ module NMF
     using LinearAlgebra
     using NonNegLeastSquares
     using Random
+    using RandomizedLinAlg
 
     export nnmf
 
