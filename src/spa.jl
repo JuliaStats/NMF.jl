@@ -61,7 +61,7 @@ function spa(X::Matrix{T}, k::Integer; nnls_alg::Tuple{Symbol, Symbol}=(:pivot, 
     W = X[:,ai]
     
     # Estimate H by non-negative least squares: minimize ||X - W*H||
-    H = nonneg_lsq(W, X, alg=nnls_alg[1], variant=nnls_alg[2], gram=false)
+    H = nonneg_lsq(W, X, alg=:fnnls)
     projectnn!(H) 
 
     return W, H
