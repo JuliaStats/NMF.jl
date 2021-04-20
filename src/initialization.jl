@@ -31,6 +31,9 @@ function _nndsvd!(X, W, Ht, inith::Bool, variant::Int)
 
     # compute randomized SVD
     (U, s, V) = rsvd(X, k)
+    U = T.(U)
+    s = T.(s)
+    V = T.(V)
 
     # main loop
     v0 = variant == 0 ? zero(T) :

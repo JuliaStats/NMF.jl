@@ -12,13 +12,13 @@ k = 2
 for T in (Float64, Float32)
     # Initialization test
     ϵ = eps(T)^(1/4)  
-    Wg = max.(rand(T, p, k) .- T(0.3), ϵ)
-    Hg = max.(rand(T, k, n) .- T(0.3), ϵ)
+    Wg = max.(rand(T, p, k) .- T(0.3), T(ϵ))
+    Hg = max.(rand(T, k, n) .- T(0.3), T(ϵ))
     X = Wg * Hg
     w, h = NMF.spa(X, k)
     x = w * h
-    @test all(w .>= 0.0)
-    @test all(h .>= 0.0)
+    @test all(w .>= zero(T))
+    @test all(h .>= zero(T))
     @test x ≈ X atol=10.0*ϵ
     #println("ϵ =",ϵ," while ||x .- X||= ",maximum(abs.(x .- X)))
 
@@ -27,7 +27,7 @@ for T in (Float64, Float32)
     X = Wg * Hg
     w, h = NMF.spa(X, k)
     x = w * h
-    @test all(w .>= 0.0)
-    @test all(h .>= 0.0)
+    @test all(w .>= zero(T))
+    @test all(h .>= zero(T))
     @test sqL2dist(X, x) < eps(T)
 end

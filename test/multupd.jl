@@ -17,8 +17,8 @@ for T in (Float64, Float32)
 
                 NMF.solve!(NMF.MultUpdate{T}(obj=alg, maxiter=5000, tol=1e-9, lambda_w=lambda_w, lambda_h=lambda_h), X, W, Hg)
                 
-                @test all(W .>= 0.0)
-                @test all(Hg .>= 0.0)
+                @test all(W .>= zero(T))
+                @test all(Hg .>= zero(T))
                 @test !any(isnan.(W)) 
                 @test !any(isnan.(Hg)) 
                 @test X ≈ W * Hg atol=1e-2

@@ -5,8 +5,8 @@ n = 8
 k = 3
 
 for T in (Float64, Float32)
-    Wg = max.(rand(T, p, k) .- 0.3, 0)
-    Hg = max.(rand(T, k, n) .- 0.3, 0)
+    Wg = max.(rand(T, p, k) .- T(0.3), zero(T))
+    Hg = max.(rand(T, k, n) .- T(0.3), zero(T))
     X = Wg * Hg
 
     for alg in (:multmse, :multdiv, :projals, :alspgrad, :cd, :greedycd)
@@ -23,8 +23,8 @@ for T in (Float64, Float32)
     ret = NMF.nnmf(X, k, alg=:spa, init=:spa)
 
     # update_H test
-    W = max.(rand(T, p, k) .- 0.3, 0)
-    H = max.(rand(T, k, n) .- 0.3, 0)
+    W = max.(rand(T, p, k) .- T(0.3), zero(T))
+    H = max.(rand(T, k, n) .- T(0.3), zero(T))
     for alg in (:multmse, :multdiv, :projals, :alspgrad, :cd, :greedycd)
         ret = NMF.nnmf(X, k, alg=alg, init=:custom, W0=copy(W), H0=copy(H), update_H=false)
         @test all(H .== ret.H)
