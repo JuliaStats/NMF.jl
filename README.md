@@ -334,6 +334,7 @@ NMF.solve!(NMF.GreedyCD{Float64}(maxiter=50), X, W, H)
 
 ```julia
 import NMF
+
  # initialize
 W, H = NMF.spa(X, 5)
 
