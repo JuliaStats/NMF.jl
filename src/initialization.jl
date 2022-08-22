@@ -27,14 +27,22 @@ function _nndsvd!(X, W, Ht, inith::Bool, variant::Int)
 
     p, n = size(X)
     k = size(W, 2)
-    T = eltype(W)
 
     # compute randomized SVD
     (U, s, V) = rsvd(X, k)
+
+    _nndsvd!(U, s, V, X, W, Ht, inith, variant)
+end
+
+function _nndsvd!(U, s, V, X, W, Ht, inith::Bool, variant::Int)
+
+    k = size(W, 2)
+    T = eltype(W)
+
     U = T.(U)
     s = T.(s)
     V = T.(V)
-
+    
     # main loop
     v0 = variant == 0 ? zero(T) :
          variant == 1 ? convert(T, mean(X)) : convert(T, mean(X) * 0.01)
