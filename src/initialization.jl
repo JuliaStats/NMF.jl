@@ -54,7 +54,7 @@ function _nndsvd!(U, s, V, X, W, Ht, inith::Bool, variant::Int)
         ypnrm, ynnrm = posnegnorm(y)
         mp = xpnrm * ypnrm
         mn = xnnrm * ynnrm
-
+        # @show xpnrm, xnnrm, ypnrm, ynnrm
         vj = v0
         if variant == 2
             vj *= rand(T)
@@ -63,12 +63,16 @@ function _nndsvd!(U, s, V, X, W, Ht, inith::Bool, variant::Int)
         if inith
             if mp >= mn
                 ss = sqrt(s[j] * mp)
+                # @show 1, ss, y, ss / ypnrm, vj
                 scalepos!(view(W,:,j), x, ss / xpnrm, vj)
                 scalepos!(view(Ht,:,j), y, ss / ypnrm, vj)
+                # @show view(Ht,:,j)
             else
                 ss = sqrt(s[j] * mn)
+                # @show 2, ss, y, ss / ypnrm, vj
                 scaleneg!(view(W,:,j), x, ss / xnnrm, vj)
                 scaleneg!(view(Ht,:,j), y, ss / ynnrm, vj)
+                # @show view(Ht,:,j)
             end
         else
             if mp >= mn
