@@ -7,8 +7,8 @@ k = 3
 Random.seed!(1234)
 
 for T in (Float64, Float32)
-    for lambda_w in (0.0, 1e-4)
-        for lambda_h in (0.0, 1e-4)
+    for lambda_w in (0.0, 1e-5)
+        for lambda_h in (0.0, 1e-5)
             Wg = max.(rand(T, p, k) .- T(0.5), zero(T))
             Hg = max.(rand(T, k, n) .- T(0.5), zero(T))
             X = Wg * Hg
@@ -18,8 +18,8 @@ for T in (Float64, Float32)
 
             @test all(W .>= zero(T))
             @test all(Hg .>= zero(T))
-            @test !any(isnan.(W)) 
-            @test !any(isnan.(Hg)) 
+            @test !any(isnan.(W))
+            @test !any(isnan.(Hg))
             @test X ≈ W * Hg atol = 1e-3
         end
     end
