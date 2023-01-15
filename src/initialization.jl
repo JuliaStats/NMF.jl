@@ -11,7 +11,7 @@ function randinit(nrows::Integer, ncols::Integer, k::Integer, T::DataType; norma
     return W, H
 end
 
-function randinit(X, k::Integer; normalize::Bool=false, zeroh::Bool=false) 
+function randinit(X, k::Integer; normalize::Bool=false, zeroh::Bool=false)
     p, n = size(X)
     randinit(p, n, k, eltype(X); normalize=normalize, zeroh=zeroh)
 end
@@ -23,17 +23,6 @@ end
 #   C. Boutsidis, and E. Gallopoulos. SVD based initialization: A head
 #   start for nonnegative matrix factorization. Pattern Recognition, 2007.
 #
-function _nndsvd!(X, W, Ht, inith::Bool, variant::Int)
-
-    p, n = size(X)
-    k = size(W, 2)
-
-    # compute randomized SVD
-    (U, s, V) = rsvd(X, k)
-
-    _nndsvd!(U, s, V, X, W, Ht, inith, variant)
-end
-
 function _nndsvd!(U, s, V, X, W, Ht, inith::Bool, variant::Int)
 
     k = size(W, 2)
@@ -42,7 +31,7 @@ function _nndsvd!(U, s, V, X, W, Ht, inith::Bool, variant::Int)
     U = T.(U)
     s = T.(s)
     V = T.(V)
-    
+
     # main loop
     v0 = variant == 0 ? zero(T) :
          variant == 1 ? convert(T, mean(X)) : convert(T, mean(X) * 0.01)
@@ -82,7 +71,7 @@ function _nndsvd!(U, s, V, X, W, Ht, inith::Bool, variant::Int)
     end
 end
 
-function nndsvd(X, k::Integer; zeroh::Bool=false, variant::Symbol=:std)
+function nndsvd(X, k::Integer; zeroh::Bool=false, variant::Symbol=:std, initdata=nothing)
 
     p, n = size(X)
     T = eltype(X)
@@ -91,15 +80,17 @@ function nndsvd(X, k::Integer; zeroh::Bool=false, variant::Symbol=:std)
            variant == :ar  ? 2 :
            throw(ArgumentError("Invalid value for variant"))
 
+    U, s, V = initdata === nothing ? rsvd(X, k) : (initdata.U[:,1:k], initdata.S[1:k], initdata.V[:,1:k])
+
     W = Matrix{T}(undef, p, k)
     H = Matrix{T}(undef, k, n)
     if zeroh
         Ht = reshape(view(H,:,:), (n, k))
-        _nndsvd!(X, W, Ht, false, ivar)
+        _nndsvd!(U, s, V, X, W, Ht, false, ivar)
         fill!(H, 0)
     else
         Ht = Matrix{T}(undef, n, k)
-        _nndsvd!(X, W, Ht, true, ivar)
+        _nndsvd!(U, s, V, X, W, Ht, true, ivar)
         for j = 1:k
             for i = 1:n
                 H[j,i] = Ht[i,j]

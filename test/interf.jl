@@ -14,6 +14,12 @@
             end
         end
 
+        # external initialization
+        F = svd(X)
+        for alg in (:multmse, :multdiv, :projals, :alspgrad, :cd, :greedycd)
+            ret = NMF.nnmf(X, k, alg=alg, init=:nndsvd, initdata=F)
+        end
+
         # replicates test
         rep = NMF.nnmf(X, k, replicates=10, maxiter=10, alg=:multmse)
         ret = NMF.nnmf(X, k, W0=rep.W, H0=rep.H, init=:custom)

@@ -42,6 +42,12 @@
         @test all(W2 .== W)
         @test all(H2 .== zero(T))
 
+        Random.seed!(5678)
+        W1, H1 = NMF.nndsvd(X, 5);
+        F = svd(X)
+        W2, H2 = NMF.nndsvd(X, 5; initdata=F)
+        @test norm(X - W2*H2) < norm(X - W1*H1)
+
         W, H = NMF.nndsvd(X, 5; variant=:ar)
         @test all(W .> zero(T))
         # NMF.printf_mat(W)
