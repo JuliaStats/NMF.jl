@@ -1,32 +1,32 @@
 # some tests for ALSPGrad
 
-# data
+@testset "alspgrad" begin
+    # data
+    p = 5
+    n = 8
+    k = 3
 
-Random.seed!(5678)
+    # Matrices
+    for T in (Float64, Float32)
+        Wg = max.(rand(T, p, k) .- T(0.3), zero(T))
+        Hg = max.(rand(T, k, n) .- T(0.3), zero(T))
+        X = Wg * Hg
 
-p = 5
-n = 8
-k = 3
+        # test update of H
 
-# Matrices
-for T in (Float64, Float32)
-    Wg = max.(rand(T, p, k) .- T(0.3), zero(T))
-    Hg = max.(rand(T, k, n) .- T(0.3), zero(T))
-    X = Wg * Hg
+        H = rand(T, k, n)
+        NMF.alspgrad_updateh!(X, Wg, H; maxiter=1000, tolg=eps(T))
+        @test all(H .>= zero(T))
+        @test H ≈ Hg atol=eps(T)^(1/4)
 
-    # test update of H
+        # test update of W
 
-    H = rand(T, k, n)
-    NMF.alspgrad_updateh!(X, Wg, H; maxiter=1000, tolg=eps(T))
-    @test all(H .>= zero(T))
-    @test H ≈ Hg atol=eps(T)^(1/4)
+        W = rand(T, p, k)
+        NMF.alspgrad_updatew!(X, W, Hg; maxiter=1000, tolg=eps(T))
+        @test all(W .>= zero(T))
+        @test W ≈ Wg atol=eps(T)^(1/4)
 
-    # test update of W
+        NMF.solve!(NMF.ALSPGrad{T}(), X, W, H)
+    end
 
-    W = rand(T, p, k)
-    NMF.alspgrad_updatew!(X, W, Hg; maxiter=1000, tolg=eps(T))
-    @test all(W .>= zero(T))
-    @test W ≈ Wg atol=eps(T)^(1/4)
-
-    NMF.solve!(NMF.ALSPGrad{T}(), X, W, H)
 end
