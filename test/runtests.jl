@@ -7,15 +7,16 @@ using StatsBase
 tests = ["utils",
          "initialization",
          "spa",
-         "multupd", 
+         "multupd",
          "alspgrad",
          "coorddesc",
          "greedycd",
          "interf"]
 
 println("Running tests:")
-for t in tests
-    tp = "$t.jl"
-    println("* $tp ...")
-    include(tp)
+@testset "All tests" begin
+    for t in tests
+        tp = "$t.jl"
+        include(tp)
+    end
 end
