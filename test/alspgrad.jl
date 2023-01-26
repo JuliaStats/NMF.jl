@@ -1,27 +1,20 @@
 # some tests for ALSPGrad
 
 @testset "alspgrad" begin
-    # data
-    p = 5
-    n = 8
-    k = 3
-
     # Matrices
     for T in (Float64, Float32)
-        Wg = max.(rand(T, p, k) .- T(0.3), zero(T))
-        Hg = max.(rand(T, k, n) .- T(0.3), zero(T))
-        X = Wg * Hg
+        X, Wg, Hg = laurberg6x3(T(0.3))
 
         # test update of H
 
-        H = rand(T, k, n)
+        H = rand(T, size(Hg)...)
         NMF.alspgrad_updateh!(X, Wg, H; maxiter=1000, tolg=eps(T))
         @test all(H .>= zero(T))
         @test H ≈ Hg atol=eps(T)^(1/4)
 
         # test update of W
 
-        W = rand(T, p, k)
+        W = rand(T, size(Wg)...)
         NMF.alspgrad_updatew!(X, W, Hg; maxiter=1000, tolg=eps(T))
         @test all(W .>= zero(T))
         @test W ≈ Wg atol=eps(T)^(1/4)
