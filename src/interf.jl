@@ -2,6 +2,7 @@
 
 function nnmf(X::AbstractMatrix{T}, k::Integer;
               init::Symbol=:nndsvdar,
+              initdata=nothing,
               alg::Symbol=:greedycd,
               maxiter::Integer=100,
               tol::Real=cbrt(eps(T)/100),
@@ -22,7 +23,7 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
         @warn "Only W will be updated."
     end
 
-    if init == :custom 
+    if init == :custom
         W0 !== nothing && H0 !== nothing || throw(ArgumentError("To use :custom initialization, set W0 and H0."))
         eltype(W0) <: Number && all(t -> t >= zero(T), W0) || throw(ArgumentError("The elements of W0 must be non-negative."))
         p0, k0 = size(W0)
@@ -41,11 +42,11 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
     if init == :random
         W, H = randinit(X, k; zeroh=!initH, normalize=true)
     elseif init == :nndsvd
-        W, H = nndsvd(X, k; zeroh=!initH)
+        W, H = nndsvd(X, k; zeroh=!initH, initdata=initdata)
     elseif init == :nndsvda
-        W, H = nndsvd(X, k; variant=:a, zeroh=!initH)
+        W, H = nndsvd(X, k; variant=:a, zeroh=!initH, initdata=initdata)
     elseif init == :nndsvdar
-        W, H = nndsvd(X, k; variant=:ar, zeroh=!initH)
+        W, H = nndsvd(X, k; variant=:ar, zeroh=!initH, initdata=initdata)
     elseif init == :spa
         W, H = spa(X, k)
     elseif init == :custom
