@@ -4,6 +4,8 @@ using Random
 using LinearAlgebra
 using StatsBase
 
+include("testproblems.jl")
+
 tests = ["utils",
          "initialization",
          "spa",
