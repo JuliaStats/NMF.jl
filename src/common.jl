@@ -24,18 +24,21 @@ struct Result{T}
     niters::Int
     converged::Bool
     objvalue::T
+    objective::Union{Nothing, Vector{T}}
 
-    function Result{T}(W::Matrix{T}, H::Matrix{T}, niters::Int, converged::Bool, objv) where T
+    function Result{T}(W::Matrix{T}, H::Matrix{T}, niters::Int, converged::Bool, objv, objective = nothing) where T
         if size(W, 2) != size(H, 1)
             throw(DimensionMismatch("Inner dimensions of W and H mismatch."))
         end
-        new{T}(W, H, niters, converged, objv)
+        new{T}(W, H, niters, converged, objv, objective)
     end
 end
 
 # common algorithmic skeleton for iterative updating methods
 
 abstract type NMFUpdater{T} end
+
+getobjective(::NMFUpdater) = nothing
 
 function nmf_skeleton!(updater::NMFUpdater{T},
                        X, W::Matrix{T}, H::Matrix{T},
@@ -71,17 +74,23 @@ function nmf_skeleton!(updater::NMFUpdater{T},
         end
 
         # display info
-        if verbose
-            elapsed = time() - start
+        if verbose || getobjective(updater) !== nothing  
             preobjv = objv
             objv = evaluate_objv(updater, state, X, W, H)
-            @printf("%5d    %13.6e    %13.6e    %13.6e    %13.6e\n",
+            if verbose
+                elapsed = time() - start
+                @printf("%5d    %13.6e    %13.6e    %13.6e    %13.6e\n",
                 t, elapsed, objv, objv - preobjv, dev)
+            end
+            
+            if getobjective(updater) !== nothing
+                push!(updater.objective, objv)
+            end
         end
     end
 
     if !verbose
         objv = evaluate_objv(updater, state, X, W, H)
     end
-    return Result{T}(W, H, t, converged, objv)
+    return Result{T}(W, H, t, converged, objv, getobjective(updater))
 end
