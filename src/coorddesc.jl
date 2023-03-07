@@ -46,8 +46,8 @@ mutable struct CoordinateDescent{T}
 end
 
 
-solve!(alg::CoordinateDescent{T}, X, W, H) where {T} =
-    nmf_skeleton!(CoordinateDescentUpd{T}(alg.α, alg.l₁ratio, alg.regularization, alg.shuffle, alg.update_H),
+solve!(alg::CoordinateDescent{T}, X, W, H; trace_obj = false) where {T} =
+    nmf_skeleton!(CoordinateDescentUpd{T}(alg.α, alg.l₁ratio, alg.regularization, alg.shuffle, alg.update_H, trace_obj ? T[] : nothing),
                   X, W, H, alg.maxiter, alg.verbose, alg.tol)
 
 
@@ -58,7 +58,8 @@ struct CoordinateDescentUpd{T} <: NMFUpdater{T}
     l₂H::T
     shuffle::Bool
     update_H::Bool
-    function CoordinateDescentUpd{T}(α::T, l₁ratio::T, regularization::Symbol, shuffle::Bool, update_H::Bool) where {T}
+    objective::Union{Nothing, Vector{T}}
+    function CoordinateDescentUpd{T}(α::T, l₁ratio::T, regularization::Symbol, shuffle::Bool, update_H::Bool, objective = nothing) where {T}
         αW = zero(T)
         αH = zero(T)
 
@@ -75,9 +76,12 @@ struct CoordinateDescentUpd{T} <: NMFUpdater{T}
                αH*l₁ratio,
                αH*(1-l₁ratio),
                shuffle,
-               update_H)
+               update_H,
+               objective)
     end
 end
+
+getobjective(updater::CoordinateDescentUpd) = updater.objective
 
 mutable struct CoordinateDescentState{T}
     WH::Matrix{T}
