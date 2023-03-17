@@ -14,6 +14,30 @@
             end
         end
 
+        for init in (:random, :nndsvd, :nndsvda, :nndsvdar, :spa)
+            ret = NMF.nnmf(X, k, alg=:cd, init=init, trace=Trace{T}(save_obj=true, save_time=true))
+            @test typeof(ret.trace.objective) == Vector{T}
+            @test length(ret.trace.objective) == ret.niters
+            @test ret.trace.objective[end] == ret.objvalue
+            @test typeof(ret.trace.time) == Vector{Float64}
+            @test length(ret.trace.time) == ret.niters
+
+            ret = NMF.nnmf(X, k, alg=:cd, init=init, trace=Trace{T}(save_obj=false, save_time=true))
+            @test ret.trace.objective === nothing
+            @test typeof(ret.trace.time) == Vector{Float64}
+            @test length(ret.trace.time) == ret.niters
+
+            ret = NMF.nnmf(X, k, alg=:cd, init=init, trace=Trace{T}(save_obj=true, save_time=false))
+            @test typeof(ret.trace.objective) == Vector{T}
+            @test length(ret.trace.objective) == ret.niters
+            @test ret.trace.objective[end] == ret.objvalue
+            @test ret.trace.time === nothing
+
+            ret = NMF.nnmf(X, k, alg=:cd, init=init, trace=Trace{T}(save_obj=false, save_time=false))
+            @test ret.trace.objective === nothing
+            @test ret.trace.time === nothing
+        end
+
         # external initialization
         F = svd(X)
         for alg in (:multmse, :multdiv, :projals, :alspgrad, :cd, :greedycd)

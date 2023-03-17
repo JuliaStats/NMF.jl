@@ -7,7 +7,8 @@ module NMF
     using Random
     using RandomizedLinAlg
 
-    export nnmf
+    export nnmf,
+           Trace
 
     include("common.jl")
     include("utils.jl")
