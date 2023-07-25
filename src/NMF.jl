@@ -22,12 +22,12 @@ module NMF
 
     include("interf.jl")
 
-    using SnoopPrecompile
+    using PrecompileTools
 
     let
-        @precompile_setup begin
+        @setup_workload begin
             X = rand(8, 6)
-            @precompile_all_calls begin
+            @compile_workload begin
                 for alg in (:multmse, :multdiv, :projals, :alspgrad, :cd, :greedycd)
                     for init in (:random, :nndsvd, :nndsvda, :nndsvdar, :spa)
                         nnmf(X, 4, alg=alg, init=init)
