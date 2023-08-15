@@ -33,6 +33,11 @@ struct Result{T}
     end
 end
 
+
+Base.:(==)(A::Result, B::Result) = A.W == B.W && A.H == B.H && A.niters == B.niters && A.converged == B.converged && A.objvalue == B.objvalue
+Base.hash(s::Result, h::UInt) = hash(s.objvalue, hash(s.converged, hash(s.niters, hash(s.H, hash(s.W, h + (0x09c9f08cfcba6de3 % UInt))))))
+
+
 # common algorithmic skeleton for iterative updating methods
 
 abstract type NMFUpdater{T} end

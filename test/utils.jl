@@ -61,4 +61,10 @@
     Xr = zeros(4, 5)
     NMF.pdrsolve!(Y, B, Xr)
     @test Xr ≈ X
+
+    X, Wg, Hg = laurberg6x3(0.3)  
+    Xnmf = NMF.solve!(NMF.CoordinateDescent{Float64}(α=0.0, maxiter=1000, tol=1e-9), X, Wg, Hg)
+    Xnmf1 = deepcopy(Xnmf)
+    @test Xnmf == Xnmf1
+    @test hash(Xnmf) == hash(Xnmf1)
 end
