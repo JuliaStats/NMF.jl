@@ -70,10 +70,7 @@ function nmf_skeleton!(updater::NMFUpdater{T},
         update_wh!(updater, state, X, W, H)
 
         # determine convergence
-        dev = max(maxad(preW, W), maxad(preH, H))
-        if dev < tol
-            converged = true
-        end
+        converged = stop_condition(W, preW, H, preH, tol)
 
         # display info
         if verbose
@@ -89,4 +86,24 @@ function nmf_skeleton!(updater::NMFUpdater{T},
         objv = evaluate_objv(updater, state, X, W, H)
     end
     return Result{T}(W, H, t, converged, objv)
+end
+
+
+function stop_condition(W::AbstractArray{T}, preW::AbstractArray, H::AbstractArray, preH::AbstractArray, eps::AbstractFloat) where T
+    for j in axes(W,2)
+        dev_w = sum_w = zero(T)
+        for i in axes(W,1)
+            dev_w += (W[i,j] - preW[i,j])^2
+            sum_w += (W[i,j] + preW[i,j])^2
+        end
+        dev_h = sum_h = zero(T)
+        for i in axes(H,2)
+            dev_h += (H[j,i] - preH[j,i])^2
+            sum_h += (H[j,i] + preH[j,i])^2
+        end  
+        if sqrt(dev_w) > eps*sqrt(sum_w) || sqrt(dev_h) > eps*sqrt(sum_h)
+            return false
+        end 
+    end
+    return true    
 end
