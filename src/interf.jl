@@ -54,37 +54,43 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
     else
         throw(ArgumentError("Invalid value for init."))
     end
+    W = W::Matrix{T}
+    H = H::Matrix{T}
 
     # choose algorithm
     if alg == :projals
-        alginst = ProjectedALS{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H)
+        ret = solve_replicates!(ProjectedALS{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH)
     elseif alg == :alspgrad
-        alginst = ALSPGrad{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H)
+        ret = solve_replicates!(ALSPGrad{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH)
     elseif alg == :multmse
-        alginst = MultUpdate{T}(obj=:mse, maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H)
+        ret = solve_replicates!(MultUpdate{T}(obj=:mse, maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH)
     elseif alg == :multdiv
-        alginst = MultUpdate{T}(obj=:div, maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H)
+        ret = solve_replicates!(MultUpdate{T}(obj=:div, maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH)
     elseif alg == :cd
-        alginst = CoordinateDescent{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H)
+        ret = solve_replicates!(CoordinateDescent{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH)
     elseif alg == :greedycd
-        alginst = GreedyCD{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H)
+        ret = solve_replicates!(GreedyCD{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH)
     elseif alg == :spa
         if init != :spa
             throw(ArgumentError("Invalid value for init, use :spa instead."))
         end
-        alginst = SPA{T}(obj=:mse)
+        ret = solve_replicates!(SPA{T}(obj=:mse), X, W, H; replicates, initH)
     else
         throw(ArgumentError("Invalid algorithm."))
     end
 
-    # run optimization
+    return ret
+end
+
+function solve_replicates!(alginst, X, W, H; replicates, initH)
     ret = solve!(alginst, X, W, H)
+    k = size(W, 2)
 
     # replicates
     minobjv = ret.objvalue
     for _ in 2:replicates
-        W, H = randinit(X, k; zeroh=!initH, normalize=true)
-        tmp = solve!(alginst, X, W, H)
+        Wrand, Hrand = randinit(X, k; zeroh=!initH, normalize=true)
+        tmp = solve!(alginst, X, Wrand, Hrand)
         if minobjv > tmp.objvalue
             ret = tmp
             minobjv = tmp.objvalue
