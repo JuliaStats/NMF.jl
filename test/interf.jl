@@ -35,5 +35,10 @@
             @test all(H .== ret.H)
             @test any(W .!= ret.W)
         end
+
+        # printing test
+        redirect_stdout(devnull) do
+            ret = NMF.nnmf(X, k, alg=:cd, init=:nndsvd, verbose=true)
+        end
     end
 end
