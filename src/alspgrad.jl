@@ -385,13 +385,13 @@ solve!(alg::ALSPGrad, X, W, H) =
 
 struct ALSPGradUpd_State{T}
     WH::Matrix{T}
-    uhstate::ALSGradUpdH_State
-    uwstate::ALSGradUpdW_State
+    uhstate::ALSGradUpdH_State{T}
+    uwstate::ALSGradUpdW_State{T}
 
     ALSPGradUpd_State{T}(X, W, H) where {T} =
         new{T}(W * H,
-               ALSGradUpdH_State(X, W, H),
-               ALSGradUpdW_State(X, W, H))
+               ALSGradUpdH_State{T}(X, W, H),
+               ALSGradUpdW_State{T}(X, W, H))
 end
 
 prepare_state(::ALSPGradUpd{T}, X, W, H) where {T} = ALSPGradUpd_State{T}(X, W, H)
