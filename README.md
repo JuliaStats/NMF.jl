@@ -26,6 +26,7 @@ A Julia package for non-negative matrix factorization (NMF).
 
 - Probabilistic NMF
 
+See also [NMFMerge](https://github.com/HolyLab/NMFMerge.jl), which can augment any least-squares NMF algorithm.
 
 ## Overview
 
