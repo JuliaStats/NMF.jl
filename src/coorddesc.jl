@@ -84,8 +84,8 @@ mutable struct CoordinateDescentState{T}
     HHt::Matrix{T}
     XHt::Matrix{T}
     XtW::Matrix{T}
-    WHHt::Matrix{T}
-    HtWtW::Matrix{T}
+    WHHt_j::Matrix{T}
+    HtWtW_j::Matrix{T}
     violation::T
     violation_init::Union{Nothing, T}
     
@@ -95,8 +95,8 @@ mutable struct CoordinateDescentState{T}
                Matrix{T}(undef, k, k),
                Matrix{T}(undef, p, k),
                Matrix{T}(undef, n, k),
-               Matrix{T}(undef, p, k),
-               Matrix{T}(undef, n, k),
+               Matrix{T}(undef, p, 1),
+               Matrix{T}(undef, n, 1),
                violation, 
                violation_init)
     end
@@ -117,10 +117,10 @@ function _update_coord_descent!(s::CoordinateDescentState{T}, X, W, H,
     mul!(HHt, H, Ht)
     if W_flag
         XHt = s.XHt
-        WHHt = s.WHHt
+        WHHt_j = s.WHHt_j
     else
         XHt = s.XtW
-        WHHt = s.HtWtW
+        WHHt_j = s.HtWtW_j
     end
     mul!(XHt, X, Ht)
 
@@ -142,10 +142,10 @@ function _update_coord_descent!(s::CoordinateDescentState{T}, X, W, H,
     violation = zero(eltype(X))
 
     for t in permutation
-        mul!(WHHt, W, HHt)
+        mul!(WHHt_j, W, view(HHt, :, t))
         for i in 1:n_samples
              # gradient = GW[t, i] where GW = np.dot(W, HHt) - XHt
-            grad = -XHt[i, t] + WHHt[i, t]
+            grad = -XHt[i, t] + WHHt_j[i]
 
             # projected gradient
             pg = W[i, t] == 0 ? min(zero(grad), grad) : grad
