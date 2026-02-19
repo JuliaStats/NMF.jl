@@ -358,11 +358,12 @@ mutable struct ALSPGrad{T}
     verbose::Bool     # whether to show procedural information (main)
 
     function ALSPGrad{T}(;maxiter::Integer=100,
-                          maxsubiter::Integer=200,
+                          maxsubiter::Integer=50,
                           tol::Real=cbrt(eps(T)),
                           tolg::Real=eps(T)^(1/4),
                           update_H::Bool=true,
                           verbose::Bool=false) where T
+        # @show maxsubiter, maxiter, tol, tolg, update_H, verbose
         new{T}(maxiter,
                maxsubiter,
                tol,
