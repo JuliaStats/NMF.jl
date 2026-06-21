@@ -21,7 +21,7 @@
         #println("ϵ =",ϵ," while ||x .- X||= ",maximum(abs.(x .- X)))
 
         # Separability test
-        Wg, Hg = NMF.separable_data(p, n, k)
+        Wg, Hg = separable_data(p, n, k)
         X = Wg * Hg
         w, h = NMF.spa(X, k)
         x = w * h
@@ -33,7 +33,7 @@
     # SPA as a factorization algorithm: constructs without a type parameter
     # and produces a Result whose element type follows the factors.
     for T in (Float64, Float32)
-        Wg, Hg = NMF.separable_data(p, n, k)
+        Wg, Hg = separable_data(p, n, k)
         X = T.(Wg * Hg)
         W, H = NMF.spa(X, k)
         ret = NMF.solve!(NMF.SPA(obj=:mse), X, W, H)

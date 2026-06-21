@@ -11,3 +11,20 @@ function laurberg6x3(α)
     X = W*H
     return X, Matrix(W), H
 end
+
+# Generate an (m × n) matrix X = W*H of nonnegative, separable data with
+# nonnegative rank k. The columns of H can be permuted to expose a (k × k)
+# identity block, so the (scaled) columns of W appear directly among the columns
+# of X — the separability condition the SPA algorithm relies on.
+function separable_data(m, n, k)
+    W = rand(m, k)
+
+    # impose separability
+    V = rand(k, n-k)
+    V ./= sum(V, dims=1)
+    H = [Matrix(I, k, k) V]
+    # permute columns of H
+    H = H[:, randperm(n)]
+
+    return W, H
+end

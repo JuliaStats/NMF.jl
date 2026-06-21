@@ -2,7 +2,7 @@ module NMF
     using StatsBase: gkldiv, sqL2dist
     using Statistics: mean
     using Printf: @printf
-    using LinearAlgebra: Hermitian, cholesky!, diagind, dot, I, ldiv!, mul!, norm, rmul!
+    using LinearAlgebra: Hermitian, cholesky!, diagind, dot, ldiv!, mul!, norm, rmul!
     using NonNegLeastSquares: nonneg_lsq
     using Random: randperm, shuffle
     using RandomizedLinAlg: rsvd

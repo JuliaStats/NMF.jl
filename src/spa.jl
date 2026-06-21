@@ -14,29 +14,6 @@ struct SPA <: AbstractNMFAlgorithm
     end
 end
 
-"""
-separable_data(m,n,k)
-Generate a (m x n) matrix X of nonnegative, separable data
-with nonnegative rank k. The rows of X correspond to
-observations and the columns of X correspond to features.
-The separability condition implies that the columns of H
-can be permuted to form a (k x k) diagonal block, and 
-the sum of the entries of each column of H is at most one. 
-Thus, the (scaled) columns of W appear in X.
-"""
-function separable_data(m, n, k)
-    W = rand(m, k)
-    
-    # impose separability
-    V = rand(k, n-k)
-    V ./= sum(V, dims=1)
-    H = [Matrix(I, k, k) V]
-    # permute columns of H
-    H = H[:, randperm(n)]
-    
-    return W, H
-end
-
 # initialization
 function spa(X::Matrix{T}, k::Integer; nnls_alg::Tuple{Symbol, Symbol}=(:pivot, :cache)) where T
 
