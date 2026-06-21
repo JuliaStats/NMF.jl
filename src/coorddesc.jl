@@ -21,7 +21,7 @@
 #  computer sciences 92.3: 708-721, 2009.
 
 
-mutable struct CoordinateDescent{T}
+struct CoordinateDescent{T}
     maxiter::Int           # maximum number of iterations (in main procedure)
     verbose::Bool          # whether to show procedural information
     tol::T                 # tolerance of changes on W and H upon convergence
@@ -80,10 +80,10 @@ struct CoordinateDescentUpd{T} <: NMFUpdater{T}
 end
 
 mutable struct CoordinateDescentState{T}
-    WH::Matrix{T}
-    HHt::Matrix{T}
-    XHt::Matrix{T}
-    XtW::Matrix{T}
+    const WH::Matrix{T}
+    const HHt::Matrix{T}
+    const XHt::Matrix{T}
+    const XtW::Matrix{T}
     violation::T
     violation_init::Union{Nothing, T}
     

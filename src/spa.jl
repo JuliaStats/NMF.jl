@@ -5,7 +5,7 @@
 #   IEEE Transactions on Pattern Analysis and Machine Intelligence, 
 #   vol. 36, no. 4, pp. 698-714, 2013. 
 
-mutable struct SPA{T}
+struct SPA{T}
     obj::Symbol   # objective :mse or :div
 
     function SPA{T}(;obj=:mse) where T

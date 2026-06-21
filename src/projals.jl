@@ -12,7 +12,7 @@
 #  negative entries back to zeros.
 #
 
-mutable struct ProjectedALS{T}
+struct ProjectedALS{T}
     maxiter::Int            # maximum number of iterations (in main procedure)
     verbose::Bool           # whether to show procedural information
     tol::T                  # tolerance of changes on W and H upon convergence

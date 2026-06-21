@@ -349,7 +349,7 @@ end
 
 ## main algorithm
 
-mutable struct ALSPGrad{T}
+struct ALSPGrad{T}
     maxiter::Int      # maximum number of main iterations
     maxsubiter::Int   # maximum number of iterations within a sub-routine
     tol::T            # tolerance of changes on W & H (main)
@@ -373,8 +373,8 @@ mutable struct ALSPGrad{T}
 end
 
 mutable struct ALSPGradUpd{T} <: NMFUpdater{T}
-    update_H::Bool
-    maxsubiter::Int
+    const update_H::Bool
+    const maxsubiter::Int
     tolg::T
 end
 

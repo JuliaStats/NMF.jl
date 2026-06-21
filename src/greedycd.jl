@@ -7,7 +7,7 @@
 #  the 17th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, 
 #  pp. 1064–1072, 2011.
 
-mutable struct GreedyCD{T}
+struct GreedyCD{T}
     maxiter::Int           # maximum number of iterations (in main procedure)
     verbose::Bool          # whether to show procedural information
     tol::T                 # tolerance of changes on W and H upon convergence
