@@ -48,6 +48,13 @@ end
 Base.:(==)(A::Result, B::Result) = A.W == B.W && A.H == B.H && A.niters == B.niters && A.converged == B.converged && A.objvalue == B.objvalue
 Base.hash(s::Result, h::UInt) = hash(s.objvalue, hash(s.converged, hash(s.niters, hash(s.H, hash(s.W, h + (0x09c9f08cfcba6de3 % UInt))))))
 
+function Base.show(io::IO, r::Result{T}) where T
+    p, k = size(r.W)
+    n = size(r.H, 2)
+    print(io, "Result{", T, "}(", p, '×', n, " ≈ W(", p, '×', k, ")·H(", k, '×', n, "), ",
+          "niters=", r.niters, ", converged=", r.converged, ", objvalue=", r.objvalue, ')')
+end
+
 
 # common algorithmic skeleton for iterative updating methods
 

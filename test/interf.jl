@@ -43,6 +43,18 @@
     end
 end
 
+@testset "Result show" begin
+    r = NMF.Result{Float64}(ones(5, 2), ones(2, 8), 42, true, 1.5)
+    str = sprint(show, r)
+    @test occursin("Result{Float64}", str)
+    @test occursin("5×8", str)        # X dimensions
+    @test occursin("niters=42", str)
+    @test occursin("converged=true", str)
+    @test occursin("objvalue=1.5", str)
+    # compact: does not dump the factor matrices
+    @test !occursin('\n', str)
+end
+
 @static if VERSION >= v"1.11"
     @testset "public bindings" begin
         for name in (:AbstractNMFAlgorithm, :Result, :solve!, :randinit, :nndsvd,
