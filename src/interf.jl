@@ -74,7 +74,7 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
         if init != :spa
             throw(ArgumentError("Invalid value for init, use :spa instead."))
         end
-        ret = solve_replicates!(SPA{T}(obj=:mse), X, W, H; replicates, initH)
+        ret = solve_replicates!(SPA(obj=:mse), X, W, H; replicates, initH)
     else
         throw(ArgumentError("Invalid algorithm."))
     end

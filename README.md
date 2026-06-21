@@ -343,5 +343,5 @@ import NMF
 W, H = NMF.spa(X, 5)
 
  # optimize
-NMF.solve!(NMF.SPA{Float64}(obj=:mse), X, W, H)
+NMF.solve!(NMF.SPA(obj=:mse), X, W, H)
 ```

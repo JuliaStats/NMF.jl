@@ -5,12 +5,12 @@
 #   IEEE Transactions on Pattern Analysis and Machine Intelligence, 
 #   vol. 36, no. 4, pp. 698-714, 2013. 
 
-struct SPA{T}
+struct SPA <: AbstractNMFAlgorithm
     obj::Symbol   # objective :mse or :div
 
-    function SPA{T}(;obj=:mse) where T
+    function SPA(;obj=:mse)
         obj == :mse || obj == :div || throw(ArgumentError("Invalid value for obj."))
-        new{T}(obj)
+        new(obj)
     end
 end
 
@@ -68,7 +68,8 @@ function spa(X::Matrix{T}, k::Integer; nnls_alg::Tuple{Symbol, Symbol}=(:pivot, 
 end
 
 # calculate statistics for result
-function solve!(alg::SPA{T}, X, W, H) where T
+function solve!(alg::SPA, X, W, H)
+    T = eltype(W)
     if alg.obj == :mse
         objv = convert(T, 0.5) * sqL2dist(X, W*H)
     elseif alg.obj == :div

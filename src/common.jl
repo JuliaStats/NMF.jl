@@ -16,6 +16,17 @@ function nmf_checksize(X, W::AbstractMatrix, H::AbstractMatrix)
 end
 
 
+# algorithm specifications
+
+"""
+    AbstractNMFAlgorithm
+
+Supertype for NMF algorithm specifications. Each concrete subtype bundles the
+options for one factorization algorithm; an instance is run with `solve!`.
+"""
+abstract type AbstractNMFAlgorithm end
+
+
 # the result type
 
 struct Result{T}

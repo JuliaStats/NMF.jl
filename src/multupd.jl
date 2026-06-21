@@ -6,7 +6,7 @@
 #   Matrix Factorization. Advances in NIPS, 2001.
 #
 
-struct MultUpdate{T}
+struct MultUpdate{T} <: AbstractNMFAlgorithm
     obj::Symbol                 # objective :mse or :div
     maxiter::Int                # maximum number of iterations
     verbose::Bool               # whether to show procedural information

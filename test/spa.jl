@@ -29,4 +29,24 @@
         @test all(h .>= zero(T))
         @test sqL2dist(X, x) < eps(T)
     end
+
+    # SPA as a factorization algorithm: constructs without a type parameter
+    # and produces a Result whose element type follows the factors.
+    for T in (Float64, Float32)
+        Wg, Hg = NMF.separable_data(p, n, k)
+        X = T.(Wg * Hg)
+        W, H = NMF.spa(X, k)
+        ret = NMF.solve!(NMF.SPA(obj=:mse), X, W, H)
+        @test ret isa NMF.Result{T}
+        @test ret.converged
+    end
+    @test_throws ArgumentError NMF.SPA(obj=:nonsense)
+end
+
+@testset "algorithm type hierarchy" begin
+    for A in (NMF.MultUpdate{Float64}, NMF.ProjectedALS{Float64},
+              NMF.ALSPGrad{Float64}, NMF.CoordinateDescent{Float64},
+              NMF.GreedyCD{Float64}, NMF.SPA)
+        @test A <: NMF.AbstractNMFAlgorithm
+    end
 end

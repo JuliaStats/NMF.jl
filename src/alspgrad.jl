@@ -349,7 +349,7 @@ end
 
 ## main algorithm
 
-struct ALSPGrad{T}
+struct ALSPGrad{T} <: AbstractNMFAlgorithm
     maxiter::Int      # maximum number of main iterations
     maxsubiter::Int   # maximum number of iterations within a sub-routine
     tol::T            # tolerance of changes on W & H (main)

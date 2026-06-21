@@ -21,7 +21,7 @@
 #  computer sciences 92.3: 708-721, 2009.
 
 
-struct CoordinateDescent{T}
+struct CoordinateDescent{T} <: AbstractNMFAlgorithm
     maxiter::Int           # maximum number of iterations (in main procedure)
     verbose::Bool          # whether to show procedural information
     tol::T                 # tolerance of changes on W and H upon convergence
