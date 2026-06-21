@@ -22,6 +22,15 @@ module NMF
 
     include("interf.jl")
 
+    # Supported, documented bindings that are reachable via the `NMF.` prefix
+    # rather than exported. `public` is a Julia 1.11+ keyword, so the eval keeps
+    # this file parseable on 1.10.
+    @static if VERSION >= v"1.11.0-DEV.469"
+        eval(Meta.parse("public AbstractNMFAlgorithm, Result, solve!, " *
+                        "randinit, nndsvd, spa, " *
+                        "MultUpdate, ProjectedALS, ALSPGrad, CoordinateDescent, GreedyCD, SPA"))
+    end
+
     using PrecompileTools: @compile_workload, @setup_workload
 
     let

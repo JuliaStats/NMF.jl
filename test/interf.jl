@@ -42,3 +42,13 @@
         end
     end
 end
+
+@static if VERSION >= v"1.11"
+    @testset "public bindings" begin
+        for name in (:AbstractNMFAlgorithm, :Result, :solve!, :randinit, :nndsvd,
+                     :spa, :MultUpdate, :ProjectedALS, :ALSPGrad,
+                     :CoordinateDescent, :GreedyCD, :SPA)
+            @test Base.ispublic(NMF, name)
+        end
+    end
+end
