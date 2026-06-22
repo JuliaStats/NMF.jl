@@ -63,7 +63,7 @@ end
 
 abstract type NMFUpdater{T} end
 
-function nmf_skeleton!(updater::NMFUpdater{T},
+function nmf_skeleton!(io::IO, updater::NMFUpdater{T},
                        X, W::Matrix{T}, H::Matrix{T},
                        maxiter::Int, verbose::Bool, tol) where T
     objv = convert(T, NaN)
@@ -75,8 +75,8 @@ function nmf_skeleton!(updater::NMFUpdater{T},
     if verbose
         start = time()
         objv = evaluate_objv(updater, state, X, W, H)
-        @printf("%-5s    %-13s    %-13s    %-13s    %-13s\n", "Iter", "Elapsed time", "objv", "objv.change", "(W & H).relchange")
-        @printf("%5d    %13.6e    %13.6e\n", 0, 0.0, objv)
+        @printf(io, "%-5s    %-13s    %-13s    %-13s    %-13s\n", "Iter", "Elapsed time", "objv", "objv.change", "(W & H).relchange")
+        @printf(io, "%5d    %13.6e    %13.6e\n", 0, 0.0, objv)
     end
 
     # main loop
@@ -98,7 +98,7 @@ function nmf_skeleton!(updater::NMFUpdater{T},
             elapsed = time() - start
             preobjv = objv
             objv = evaluate_objv(updater, state, X, W, H)
-            @printf("%5d    %13.6e    %13.6e    %13.6e    %13.6e\n",
+            @printf(io, "%5d    %13.6e    %13.6e    %13.6e    %13.6e\n",
                 t, elapsed, objv, objv - preobjv, dev)
         end
     end

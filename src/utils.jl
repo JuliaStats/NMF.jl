@@ -1,11 +1,11 @@
 # Numerical utilities to support implementation
 
-function printf_mat(x::AbstractMatrix)
+function printf_mat(io::IO, x::AbstractMatrix)
     @inbounds for i = 1:size(x,1)
         for j = 1:size(x,2)
-            @printf("%8.4f ", x[i,j])
+            @printf(io, "%8.4f ", x[i,j])
         end
-        println()
+        println(io)
     end
 end
 

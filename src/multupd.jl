@@ -43,12 +43,12 @@ struct MultUpdate{T} <: AbstractNMFAlgorithm
     end
 end
 
-function solve!(alg::MultUpdate{T}, X, W, H) where T
+function solve!(alg::MultUpdate{T}, X, W, H; io::IO=stdout) where T
 
     if alg.obj == :mse
-        nmf_skeleton!(MultUpdMSE(alg.update_H, alg.lambda_w, alg.lambda_h, sqrt(eps(T))), X, W, H, alg.maxiter, alg.verbose, alg.tol)
+        nmf_skeleton!(io, MultUpdMSE(alg.update_H, alg.lambda_w, alg.lambda_h, sqrt(eps(T))), X, W, H, alg.maxiter, alg.verbose, alg.tol)
     else # alg == :div
-        nmf_skeleton!(MultUpdDiv(alg.update_H, alg.lambda_w, alg.lambda_h, sqrt(eps(T))), X, W, H, alg.maxiter, alg.verbose, alg.tol)
+        nmf_skeleton!(io, MultUpdDiv(alg.update_H, alg.lambda_w, alg.lambda_h, sqrt(eps(T))), X, W, H, alg.maxiter, alg.verbose, alg.tol)
     end
 end
 

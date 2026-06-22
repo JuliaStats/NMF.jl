@@ -48,8 +48,8 @@ struct CoordinateDescent{T} <: AbstractNMFAlgorithm
 end
 
 
-solve!(alg::CoordinateDescent{T}, X, W, H) where {T} =
-    nmf_skeleton!(CoordinateDescentUpd{T}(alg.α, alg.l₁ratio, alg.regularization, alg.shuffle, alg.update_H),
+solve!(alg::CoordinateDescent{T}, X, W, H; io::IO=stdout) where {T} =
+    nmf_skeleton!(io, CoordinateDescentUpd{T}(alg.α, alg.l₁ratio, alg.regularization, alg.shuffle, alg.update_H),
                   X, W, H, alg.maxiter, alg.verbose, alg.tol)
 
 

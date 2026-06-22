@@ -66,7 +66,8 @@ function set_w!(s::ALSGradUpdH_State, X, W)
     mul!(s.WtX, Wt, X)
 end
 
-function alspgrad_updateh!(X,
+function alspgrad_updateh!(io::IO,
+                           X,
                            W::VecOrMat{T},
                            H::VecOrMat{T};
                            maxiter::Int = 1000,
@@ -78,12 +79,13 @@ function alspgrad_updateh!(X,
 
     s = ALSGradUpdH_State(X, W, H)
     set_w!(s, X, W)
-    _alspgrad_updateh!(X, W, H, s,
+    _alspgrad_updateh!(io, X, W, H, s,
                        maxiter, traceiter, tolg,
                        beta, sigma, verbose)
 end
 
-function _alspgrad_updateh!(X,                      # size (p, n)
+function _alspgrad_updateh!(io::IO,                 # sink for verbose output
+                            X,                      # size (p, n)
                             W::VecOrMat,            # size (p, k)
                             H::VecOrMat,            # size (k, n)
                             s::ALSGradUpdH_State,   # state to hold temporary quantities
@@ -105,11 +107,11 @@ function _alspgrad_updateh!(X,                      # size (p, n)
 
     # banner
     if verbose
-        @printf("%5s    %12s    %12s    %12s    %8s    %12s\n",
+        @printf(io, "%5s    %12s    %12s    %12s    %8s    %12s\n",
             "Iter", "objv", "objv.change", "1st-ord", "alpha", "back-tracks")
         WH = W * H
         objv = convert(T, 0.5) * sqL2dist(X, WH)
-        @printf("%5d    %12.5e\n", 0, objv)
+        @printf(io, "%5d    %12.5e\n", 0, objv)
     end
 
     # main loop
@@ -183,7 +185,7 @@ function _alspgrad_updateh!(X,                      # size (p, n)
             mul!(WH, W, H)
             preobjv = objv
             objv = convert(T, 0.5) * sqL2dist(X, WH)
-            @printf("%5d    %12.5e    %12.5e    %12.5e    %8.4f    %12d\n",
+            @printf(io, "%5d    %12.5e    %12.5e    %12.5e    %8.4f    %12d\n",
                 t, objv, objv - preobjv, pgnrm, α, it)
         end
     end
@@ -222,7 +224,8 @@ function set_h!(s::ALSGradUpdW_State, X, H)
 end
 
 
-function alspgrad_updatew!(X,
+function alspgrad_updatew!(io::IO,
+                           X,
                            W::VecOrMat{T},
                            H::VecOrMat{T};
                            maxiter::Int = 1000,
@@ -234,12 +237,13 @@ function alspgrad_updatew!(X,
 
     s = ALSGradUpdW_State(X, W, H)
     set_h!(s, X, H)
-    _alspgrad_updatew!(X, W, H, s,
+    _alspgrad_updatew!(io, X, W, H, s,
                        maxiter, traceiter, tolg,
                        beta, sigma, verbose)
 end
 
-function _alspgrad_updatew!(X,                      # size (p, n)
+function _alspgrad_updatew!(io::IO,                 # sink for verbose output
+                            X,                      # size (p, n)
                             W::VecOrMat,            # size (p, k)
                             H::VecOrMat,            # size (k, n)
                             s::ALSGradUpdW_State,   # state to hold temporary quantities
@@ -261,11 +265,11 @@ function _alspgrad_updatew!(X,                      # size (p, n)
 
     # banner
     if verbose
-        @printf("%5s    %12s    %12s    %12s    %8s    %12s\n",
+        @printf(io, "%5s    %12s    %12s    %12s    %8s    %12s\n",
             "Iter", "objv", "objv.change", "1st-ord", "alpha", "back-tracks")
         WH = W * H
         objv = convert(T, 0.5) * sqL2dist(X, WH)
-        @printf("%5d    %12.5e\n", 0, objv)
+        @printf(io, "%5d    %12.5e\n", 0, objv)
     end
 
     # main loop
@@ -339,7 +343,7 @@ function _alspgrad_updatew!(X,                      # size (p, n)
             mul!(WH, W, H)
             preobjv = objv
             objv = convert(T, 0.5) * sqL2dist(X, WH)
-            @printf("%5d    %12.5e    %12.5e    %12.5e    %8.4f    %12d\n",
+            @printf(io, "%5d    %12.5e    %12.5e    %12.5e    %8.4f    %12d\n",
                 t, objv, objv - preobjv, pgnrm, α, it)
         end
     end
@@ -380,8 +384,8 @@ mutable struct ALSPGradUpd{T} <: NMFUpdater{T}
     tolg::T
 end
 
-solve!(alg::ALSPGrad, X, W, H) =
-    nmf_skeleton!(ALSPGradUpd(alg.update_H, alg.maxsubiter, alg.tolg),
+solve!(alg::ALSPGrad, X, W, H; io::IO=stdout) =
+    nmf_skeleton!(io, ALSPGradUpd(alg.update_H, alg.maxsubiter, alg.tolg),
                   X, W, H, alg.maxiter, alg.verbose, alg.tol)
 
 
@@ -405,7 +409,7 @@ function update_wh!(upd::ALSPGradUpd, s::ALSPGradUpd_State, X, W, H)
     # update H
     if upd.update_H
         set_w!(s.uhstate, X, W)
-        iterH = _alspgrad_updateh!(X, W, H, s.uhstate,
+        iterH = _alspgrad_updateh!(stdout, X, W, H, s.uhstate,
             upd.maxsubiter, 20, upd.tolg, convert(T, 0.2), convert(T, 0.01), false)[2]
 
         if iterH == 1
@@ -415,7 +419,7 @@ function update_wh!(upd::ALSPGradUpd, s::ALSPGradUpd_State, X, W, H)
 
     # update W
     set_h!(s.uwstate, X, H)
-    iterW = _alspgrad_updatew!(X, W, H, s.uwstate,
+    iterW = _alspgrad_updatew!(stdout, X, W, H, s.uwstate,
         upd.maxsubiter, 20, upd.tolg, convert(T, 0.2), convert(T, 0.01), false)[2]
 
     if iterW == 1

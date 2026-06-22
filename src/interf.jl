@@ -10,7 +10,8 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
               W0::Union{AbstractMatrix{T}, Nothing}=nothing,
               H0::Union{AbstractMatrix{T}, Nothing}=nothing,
               update_H::Bool=true,
-              verbose::Bool=false) where T
+              verbose::Bool=false,
+              io::IO=stdout) where T
 
     eltype(X) <: Number && all(t -> t >= zero(T), X) || throw(ArgumentError("The elements of X must be non-negative."))
 
@@ -59,22 +60,22 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
 
     # choose algorithm
     if alg == :projals
-        ret = solve_replicates!(ProjectedALS{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH)
+        ret = solve_replicates!(ProjectedALS{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH, io)
     elseif alg == :alspgrad
-        ret = solve_replicates!(ALSPGrad{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH)
+        ret = solve_replicates!(ALSPGrad{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH, io)
     elseif alg == :multmse
-        ret = solve_replicates!(MultUpdate{T}(obj=:mse, maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH)
+        ret = solve_replicates!(MultUpdate{T}(obj=:mse, maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH, io)
     elseif alg == :multdiv
-        ret = solve_replicates!(MultUpdate{T}(obj=:div, maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH)
+        ret = solve_replicates!(MultUpdate{T}(obj=:div, maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH, io)
     elseif alg == :cd
-        ret = solve_replicates!(CoordinateDescent{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH)
+        ret = solve_replicates!(CoordinateDescent{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH, io)
     elseif alg == :greedycd
-        ret = solve_replicates!(GreedyCD{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH)
+        ret = solve_replicates!(GreedyCD{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH, io)
     elseif alg == :spa
         if init != :spa
             throw(ArgumentError("Invalid value for init, use :spa instead."))
         end
-        ret = solve_replicates!(SPA(obj=:mse), X, W, H; replicates, initH)
+        ret = solve_replicates!(SPA(obj=:mse), X, W, H; replicates, initH, io)
     else
         throw(ArgumentError("Invalid algorithm."))
     end
@@ -82,15 +83,15 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
     return ret
 end
 
-function solve_replicates!(alginst, X, W, H; replicates, initH)
-    ret = solve!(alginst, X, W, H)
+function solve_replicates!(alginst, X, W, H; replicates, initH, io::IO=stdout)
+    ret = solve!(alginst, X, W, H; io)
     k = size(W, 2)
 
     # replicates
     minobjv = ret.objvalue
     for _ in 2:replicates
         Wrand, Hrand = randinit(X, k; zeroh=!initH, normalize=true)
-        tmp = solve!(alginst, X, Wrand, Hrand)
+        tmp = solve!(alginst, X, Wrand, Hrand; io)
         if minobjv > tmp.objvalue
             ret = tmp
             minobjv = tmp.objvalue

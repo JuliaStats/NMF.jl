@@ -35,11 +35,35 @@
             @test any(W .!= ret.W)
         end
 
-        # printing test
-        redirect_stdout(devnull) do
-            ret = NMF.nnmf(X, k, alg=:cd, init=:nndsvd, verbose=true)
-        end
+        # verbose progress is routed to the caller-supplied io, not stdout
+        buf = IOBuffer()
+        NMF.nnmf(X, k, alg=:cd, init=:nndsvd, verbose=true, io=buf)
+        out = String(take!(buf))
+        @test occursin("Iter", out)
+        @test occursin("objv", out)
+        # with verbose off, nothing is written to io
+        NMF.nnmf(X, k, alg=:cd, init=:nndsvd, verbose=false, io=buf)
+        @test isempty(take!(buf))
     end
+end
+
+@testset "verbose io redirection" begin
+    Random.seed!(1234)
+    k = 3
+    Wg = max.(rand(6, k) .- 0.3, 0.0)
+    Hg = max.(rand(k, 8) .- 0.3, 0.0)
+    X = Wg * Hg
+
+    # solve! accepts an io keyword and writes verbose output there
+    W, H = NMF.randinit(X, k)
+    buf = IOBuffer()
+    NMF.solve!(NMF.MultUpdate{Float64}(; maxiter=10, verbose=true), X, W, H; io=buf)
+    @test occursin("Iter", String(take!(buf)))
+
+    # the ALSPGrad sub-routine entry points take io as their first argument
+    W, H = NMF.randinit(X, k)
+    NMF.alspgrad_updateh!(buf, X, W, H; maxiter=20, verbose=true)
+    @test occursin("objv", String(take!(buf)))
 end
 
 @testset "Result construction" begin
