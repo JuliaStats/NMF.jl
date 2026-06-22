@@ -52,6 +52,16 @@
         @test w == wf
         @test h == hf
     end
+    # nnls_alg is forwarded to the underlying NNLS solver.
+    let T = Float64
+        Wg, Hg = separable_data(p, n, k)
+        X = T.(Wg * Hg)
+        wd, hd = NMF.spa(X, k)                                # default (:pivot, :cache)
+        wf, hf = NMF.spa(X, k; nnls_alg=(:fnnls, :none))      # a different exact solver
+        @test wd == wf                                        # anchor selection is independent of nnls_alg
+        @test hd ≈ hf
+        @test_throws ArgumentError NMF.spa(X, k; nnls_alg=(:bogus, :none))
+    end
     @test_throws ArgumentError NMF.SPA(obj=:nonsense)
 end
 

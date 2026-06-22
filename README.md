@@ -139,7 +139,7 @@ The function supports the following keyword arguments:
     - ``variant``: the variant of the algorithm. Default is ``std``, meaning to use the standard version, which would generate a rather sparse ``W``. Other values are ``a`` and ``ar``, respectively corresponding to the variants: *NNDSVDa* and *NNDSVDar*. Particularly, ``ar`` is recommended for dense NMF.
 
 
-- **NMF.spa**(X, k)
+- **NMF.spa**(X, k[; nnls_alg=(:pivot, :cache)])
 
     Use the *Successive Projection Algorithm (SPA)* to initialize ``W`` and ``H``.
 
@@ -150,6 +150,10 @@ The function supports the following keyword arguments:
     ```julia
     W, H = NMF.spa(X, k)
     ```
+
+    - ``nnls_alg``: the ``(alg, variant)`` pair forwarded to
+      ``NonNegLeastSquares.nonneg_lsq`` when solving for ``H``. Default is
+      ``(:pivot, :cache)``.
 
 
 ## Factorization Algorithms
