@@ -363,6 +363,8 @@ struct ALSPGrad{T} <: AbstractNMFAlgorithm
                           tolg::Real=eps(T)^(1/4),
                           update_H::Bool=true,
                           verbose::Bool=false) where T
+        maxiter > 1 || throw(ArgumentError("maxiter must be greater than 1."))
+        tol > 0 || throw(ArgumentError("tol must be positive."))
         new{T}(maxiter,
                maxsubiter,
                tol,

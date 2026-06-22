@@ -82,3 +82,15 @@ end
         end
     end
 end
+
+@testset "constructor argument validation" begin
+    # Every iterative algorithm rejects a degenerate maxiter/tol rather than
+    # silently returning niters=0, converged=false.
+    for Alg in (NMF.MultUpdate, NMF.ProjectedALS, NMF.ALSPGrad,
+                NMF.CoordinateDescent, NMF.GreedyCD)
+        @test_throws ArgumentError Alg{Float64}(maxiter=1)
+        @test_throws "maxiter must be greater than 1" Alg{Float64}(maxiter=0)
+        @test_throws ArgumentError Alg{Float64}(tol=0.0)
+        @test_throws "tol must be positive" Alg{Float64}(tol=-1.0)
+    end
+end

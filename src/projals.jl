@@ -27,6 +27,8 @@ struct ProjectedALS{T} <: AbstractNMFAlgorithm
                               lambda_w::Real=cbrt(eps(T)),
                               lambda_h::Real=cbrt(eps(T))) where T
 
+        maxiter > 1 || throw(ArgumentError("maxiter must be greater than 1."))
+        tol > 0 || throw(ArgumentError("tol must be positive."))
         new{T}(maxiter, verbose, tol, update_H, lambda_w, lambda_h)
     end
 end

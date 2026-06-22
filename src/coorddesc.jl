@@ -41,6 +41,8 @@ struct CoordinateDescent{T} <: AbstractNMFAlgorithm
                               regularization=:both,
                               l₁ratio::Real=zero(T),
                               shuffle::Bool=false) where T
+        maxiter > 1 || throw(ArgumentError("maxiter must be greater than 1."))
+        tol > 0 || throw(ArgumentError("tol must be positive."))
         new{T}(maxiter, verbose, tol, update_H, α, l₁ratio, regularization, shuffle)
     end
 end
