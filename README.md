@@ -135,7 +135,7 @@ The function supports the following keyword arguments:
 
     This function has two keyword arguments:
 
-    - ``zeroh``: have ``H`` initialized when it is set to ``true``, or set ``H`` to all zeros when it is set to ``false``.
+    - ``zeroh``: when set to ``true``, the output ``H`` is simply a zero matrix of size ``(k, n)``; when set to ``false`` (the default), ``H`` is initialized. Setting it to ``true`` is useful for algorithms (*e.g.* ALS) where only ``W`` needs to be initialized.
     - ``variant``: the variant of the algorithm. Default is ``std``, meaning to use the standard version, which would generate a rather sparse ``W``. Other values are ``a`` and ``ar``, respectively corresponding to the variants: *NNDSVDa* and *NNDSVDar*. Particularly, ``ar`` is recommended for dense NMF.
 
 
