@@ -160,6 +160,8 @@ The function supports the following keyword arguments:
 
 This package provides multiple factorization algorithms. Each algorithm corresponds to a type. One can create an algorithm *instance* by choosing a type and specifying the options, and run the algorithm using ``NMF.solve!``:
 
+Each constructor is keyword-only and (except ``SPA``) parameterized by the element type ``T`` (e.g. ``Float64``); instantiate it as ``MultUpdate{Float64}(; …)``. The defaults below depend on ``T``.
+
 #### The NMF.solve! Function
 
 **NMF.solve!**(alg, X, W, H)
@@ -180,13 +182,13 @@ The matrices ``W`` and ``H`` are updated in place.
     This algorithm has two different kind of objectives: minimizing mean-squared-error (``:mse``) and minimizing divergence (``:div``). Both ``W`` and ``H`` need to be initialized.
 
     ```julia
-    MultUpdate(obj::Symbol=:mse,        # objective, either :mse or :div
-               maxiter::Integer=100,    # maximum number of iterations
-               verbose::Bool=false,     # whether to show procedural information
-               tol::Real=1.0e-6,        # tolerance of changes on W and H upon convergence
-               update_H::Bool=true,     # whether to update H
-               lambda_w::Real=0.0,      # L1 regularization coefficient for W
-               lambda_h::Real=0.0)      # L1 regularization coefficient for H
+    MultUpdate{T}(; obj::Symbol=:mse,        # objective, either :mse or :div
+                    maxiter::Integer=100,    # maximum number of iterations
+                    verbose::Bool=false,     # whether to show procedural information
+                    tol::Real=cbrt(eps(T)),  # tolerance of changes on W and H upon convergence
+                    update_H::Bool=true,     # whether to update H
+                    lambda_w::Real=zero(T),  # L1 regularization coefficient for W
+                    lambda_h::Real=zero(T))  # L1 regularization coefficient for H
     ```
 
     **Note:** the values above are default values for the keyword arguments. One can override part (or all) of them.
@@ -197,12 +199,12 @@ The matrices ``W`` and ``H`` are updated in place.
     This algorithm alternately updates ``W`` and ``H`` while holding the other fixed. Each update step solves ``W`` or ``H`` without enforcing the non-negativity constrait, and forces all negative entries to zeros afterwards. Only ``W`` needs to be initialized.
 
     ```julia
-    ProjectedALS(maxiter::Integer=100,    # maximum number of iterations
-                 verbose::Bool=false,     # whether to show procedural information
-                 tol::Real=1.0e-6,        # tolerance of changes on W and H upon convergence
-                 update_H::Bool=true,     # whether to update H
-                 lambda_w::Real=1.0e-6,   # L2 regularization coefficient for W
-                 lambda_h::Real=1.0e-6)   # L2 regularization coefficient for H
+    ProjectedALS{T}(; maxiter::Integer=100,        # maximum number of iterations
+                      verbose::Bool=false,         # whether to show procedural information
+                      tol::Real=cbrt(eps(T)),      # tolerance of changes on W and H upon convergence
+                      update_H::Bool=true,         # whether to update H
+                      lambda_w::Real=cbrt(eps(T)), # L2 regularization coefficient for W
+                      lambda_h::Real=cbrt(eps(T))) # L2 regularization coefficient for H
     ```
 
 - **Alternate Least Square Using Projected Gradient Descent**
@@ -212,12 +214,12 @@ The matrices ``W`` and ``H`` are updated in place.
     This algorithm adopts the alternate least square strategy. A efficient projected gradient descent method is used to solve each sub-problem. Both ``W`` and ``H`` need to be initialized.
 
     ```julia
-    ALSPGrad(maxiter::Integer=100,      # maximum number of iterations (in main procedure)
-             maxsubiter::Integer=200,   # maximum number of iterations in solving each sub-problem
-             tol::Real=1.0e-6,          # tolerance of changes on W and H upon convergence
-             tolg::Real=1.0e-4,         # tolerable gradient norm in sub-problem (first-order optimality)
-             update_H::Bool=true,       # whether to update H
-             verbose::Bool=false)       # whether to show procedural information
+    ALSPGrad{T}(; maxiter::Integer=100,      # maximum number of iterations (in main procedure)
+                  maxsubiter::Integer=200,   # maximum number of iterations in solving each sub-problem
+                  tol::Real=cbrt(eps(T)),    # tolerance of changes on W and H upon convergence
+                  tolg::Real=eps(T)^(1/4),   # tolerable gradient norm in sub-problem (first-order optimality)
+                  update_H::Bool=true,       # whether to update H
+                  verbose::Bool=false)       # whether to show procedural information
     ```
 
 - **Coordinate Descent solver with Fast Hierarchical Alternating Least Squares**
@@ -227,14 +229,14 @@ The matrices ``W`` and ``H`` are updated in place.
     Sequential constrained minimization on a set of squared Euclidean distances over W and H matrices. Uses l_1 and l_2 penalties to enforce sparsity.
 
     ```julia
-    CoordinateDescent(maxiter::Integer=100,      # maximum number of iterations (in main procedure)
-                      verbose::Bool=false,       # whether to show procedural information
-                      tol::Real=1.0e-6,          # tolerance of changes on W and H upon convergence
-                      update_H::Bool=true,       # whether to update H
-                      α::Real=0.0,               # constant that multiplies the regularization terms
-                      regularization=:both,      # select whether the regularization affects the components (H), the transformation (W), both or none of them (:components, :transformation, :both, :none)
-                      l₁ratio::Real=0.0,         # l1 / l2 regularization mixing parameter (in [0; 1])
-                      shuffle::Bool=false)       # if true, randomize the order of coordinates in the CD solver
+    CoordinateDescent{T}(; maxiter::Integer=100,      # maximum number of iterations (in main procedure)
+                           verbose::Bool=false,       # whether to show procedural information
+                           tol::Real=cbrt(eps(T)),    # tolerance of changes on W and H upon convergence
+                           update_H::Bool=true,       # whether to update H
+                           α::Real=zero(T),           # constant that multiplies the regularization terms
+                           regularization=:both,      # select whether the regularization affects the components (H), the transformation (W), both or none of them (:components, :transformation, :both, :none)
+                           l₁ratio::Real=zero(T),     # l1 / l2 regularization mixing parameter (in [0; 1])
+                           shuffle::Bool=false)       # if true, randomize the order of coordinates in the CD solver
     ```
 
 - **Greedy Coordinate Descent**
@@ -245,12 +247,12 @@ The matrices ``W`` and ``H`` are updated in place.
     Both ``W`` and ``H`` need to be initialized.
 
     ```julia
-    GreedyCD(maxiter::Integer=100,  # maximum number of iterations (in main procedure)
-             verbose::Bool=false,   # whether to show procedural information
-             tol::Real=1.0e-6,      # tolerance of changes on W and H upon convergence
-             update_H::Bool=true,   # whether to update H
-             lambda_w::Real=0.0,    # L1 regularization coefficient for W
-             lambda_h::Real=0.0)    # L1 regularization coefficient for H
+    GreedyCD{T}(; maxiter::Integer=100,   # maximum number of iterations (in main procedure)
+                  verbose::Bool=false,    # whether to show procedural information
+                  tol::Real=cbrt(eps(T)), # tolerance of changes on W and H upon convergence
+                  update_H::Bool=true,    # whether to update H
+                  lambda_w::Real=zero(T), # L1 regularization coefficient for W
+                  lambda_h::Real=zero(T)) # L1 regularization coefficient for H
     ```
 
 - **Successive Projection Algorithm for Separable NMF**
@@ -260,7 +262,7 @@ The matrices ``W`` and ``H`` are updated in place.
     A separable matrix X can be written as ``X = WH = W[I V]P``, where ``W`` has rank ``k``, ``I`` is the identity matrix, the sum of the entries of each column of ``V`` is at most one, and ``P`` is a permutation matrix to arange the columns of ``[I V]`` randomly. Separable NMF aims to decompose a separable matrix ``X`` into two nonnegative factor matrices ``W`` and ``H``, so that ``WH`` is equal to ``X``. This algorithm is used for separable NMF. Both ``W`` and ``H`` need to be initialized by ``init=:spa``.
 
     ```julia
-    SPA(obj::Symbol=:mse)   # objective :mse or :div
+    SPA(; obj::Symbol=:mse)   # objective :mse or :div
     ```
 
 ## Examples
