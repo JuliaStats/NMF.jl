@@ -19,4 +19,14 @@
             end
         end
     end
+
+    @testset "deprecated lambda keyword" begin
+        # A non-negative lambda warns and forwards to lambda_w/lambda_h.
+        alg = @test_logs (:warn, r"lambda is deprecated") NMF.MultUpdate{Float64}(lambda=0.5)
+        @test alg.lambda_w == 0.5
+        @test alg.lambda_h == 0.5
+        # A negative lambda is rejected rather than silently dropped.
+        @test_throws ArgumentError NMF.MultUpdate{Float64}(lambda=-1.0)
+        @test_throws "lambda must be non-negative" NMF.MultUpdate{Float64}(lambda=-1.0)
+    end
 end
