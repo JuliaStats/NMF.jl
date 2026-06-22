@@ -42,6 +42,25 @@
     end
 end
 
+@testset "Result construction" begin
+    W = ones(5, 2); H = ones(2, 8)
+    ref = NMF.Result{Float64}(W, H, 42, true, 1.5)
+
+    # The inner constructor coerces non-Matrix and differently-typed arguments
+    # into the declared fields.
+    @test NMF.Result{Float64}(view(W, :, :), H, 42, true, 1.5) == ref
+    @test NMF.Result{Float64}(Int.(W), Int.(H), 42, true, 1.5) == ref
+    @test NMF.Result{Float64}(W, H, 42, true, 3//2) == ref
+
+    # The outer constructor infers T from the factor element types.
+    r = NMF.Result(W, H, 42, true, 1.5)
+    @test r isa NMF.Result{Float64}
+    @test r == ref
+    @test NMF.Result(Float32.(W), Float32.(H), 42, true, 1.5f0) isa NMF.Result{Float32}
+
+    @test_throws DimensionMismatch NMF.Result{Float64}(W, ones(3, 8), 42, true, 1.5)
+end
+
 @testset "Result show" begin
     r = NMF.Result{Float64}(ones(5, 2), ones(2, 8), 42, true, 1.5)
     str = sprint(show, r)

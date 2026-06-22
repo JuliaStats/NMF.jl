@@ -36,13 +36,16 @@ struct Result{T}
     converged::Bool
     objvalue::T
 
-    function Result{T}(W::Matrix{T}, H::Matrix{T}, niters::Int, converged::Bool, objv) where T
+    function Result{T}(W, H, niters, converged, objv) where T
         if size(W, 2) != size(H, 1)
             throw(DimensionMismatch("Inner dimensions of W and H mismatch."))
         end
         new{T}(W, H, niters, converged, objv)
     end
 end
+
+Result(W::AbstractMatrix, H::AbstractMatrix, niters, converged, objv) =
+    Result{promote_type(eltype(W), eltype(H))}(W, H, niters, converged, objv)
 
 
 Base.:(==)(A::Result, B::Result) = A.W == B.W && A.H == B.H && A.niters == B.niters && A.converged == B.converged && A.objvalue == B.objvalue
