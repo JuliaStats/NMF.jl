@@ -123,7 +123,11 @@ function stop_condition(W::AbstractArray{T}, preW::AbstractArray, H::AbstractArr
             dev_h += (H[j,i] - preH[j,i])^2
             sum_h += (H[j,i] + preH[j,i])^2
         end
-        devmax = max(devmax, sqrt(max(dev_w/sum_w, dev_h/sum_h)))
+        # A column that is all-zero in both W and preW (a dead component) gives
+        # sum==0 and dev==0; its relative change is zero, so guard the 0/0.
+        rel_w = sum_w > 0 ? dev_w/sum_w : zero(T)
+        rel_h = sum_h > 0 ? dev_h/sum_h : zero(T)
+        devmax = max(devmax, sqrt(max(rel_w, rel_h)))
         if sqrt(dev_w) > eps*sqrt(sum_w) || sqrt(dev_h) > eps*sqrt(sum_h)
             return false, devmax
         end

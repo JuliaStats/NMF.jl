@@ -67,4 +67,17 @@
     Xnmf1 = deepcopy(Xnmf)
     @test Xnmf == Xnmf1
     @test hash(Xnmf) == hash(Xnmf1)
+
+    ## stop_condition
+
+    # A dead component (a column that is all-zero in both W and preW) gives a
+    # 0/0 relative change; it must be treated as zero, not poison devmax to NaN.
+    W = [1.0 0.0; 2.0 0.0]
+    preW = [1.0 0.0; 2.0 0.0]
+    H = [1.0 3.0; 0.0 0.0]
+    preH = [1.0 3.0; 0.0 0.0]
+    converged, devmax = NMF.stop_condition(W, preW, H, preH, 1e-6)
+    @test converged
+    @test isfinite(devmax)
+    @test devmax == 0.0
 end

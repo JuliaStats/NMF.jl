@@ -63,6 +63,16 @@
         @test_throws ArgumentError NMF.spa(X, k; nnls_alg=(:bogus, :none))
     end
     @test_throws ArgumentError NMF.SPA(obj=:nonsense)
+
+    # An all-zero column has no well-defined normalization; spa must reject it
+    # rather than feed NaNs into anchor selection.
+    let T = Float64
+        Wg, Hg = separable_data(p, n, k)
+        X = T.(Wg * Hg)
+        X[:, 3] .= 0
+        @test_throws ArgumentError NMF.spa(X, k)
+        @test_throws "sum to zero" NMF.spa(X, k)
+    end
 end
 
 @testset "algorithm type hierarchy" begin

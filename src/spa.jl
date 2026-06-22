@@ -17,8 +17,13 @@ end
 # initialization
 function spa(X::AbstractMatrix{T}, k::Integer; nnls_alg::Tuple{Symbol, Symbol}=(:pivot, :cache)) where T
 
-    # Normalize data so that columns of X sum to one
-    R = X ./ sum(X, dims=1)
+    # Normalize data so that columns of X sum to one. An all-zero column has no
+    # well-defined normalization (0/0), so reject it rather than propagate NaNs
+    # into the anchor-selection argmax.
+    colsums = sum(X, dims=1)
+    zerocols = findall(iszero, vec(colsums))
+    isempty(zerocols) || throw(ArgumentError("spa requires every column of X to have a nonzero sum; column(s) $zerocols sum to zero."))
+    R = X ./ colsums
 
     # W = R[:,ai], where ai are the "anchor indices"
     # (ai forms the convex hull of columns in R)
