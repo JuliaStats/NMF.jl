@@ -79,26 +79,22 @@ struct CoordinateDescentUpd{T} <: NMFUpdater{T}
     end
 end
 
-mutable struct CoordinateDescentState{T}
-    const WH::Matrix{T}
-    const HHt::Matrix{T}
-    const XHt::Matrix{T}
-    const XtW::Matrix{T}
-    violation::T
-    violation_init::Union{Nothing, T}
-    
-    function CoordinateDescentState{T}(X, W, H, violation, violation_init) where T
+struct CoordinateDescentState{T}
+    WH::Matrix{T}
+    HHt::Matrix{T}
+    XHt::Matrix{T}
+    XtW::Matrix{T}
+
+    function CoordinateDescentState{T}(X, W, H) where T
         p, n, k = nmf_checksize(X, W, H)
-        new{T}(W * H, 
+        new{T}(W * H,
                Matrix{T}(undef, k, k),
                Matrix{T}(undef, p, k),
-               Matrix{T}(undef, n, k),
-               violation, 
-               violation_init)
+               Matrix{T}(undef, n, k))
     end
 end
 
-prepare_state(::CoordinateDescentUpd{T}, X, W, H) where T = CoordinateDescentState{T}(X, W, H, zero(T), nothing)
+prepare_state(::CoordinateDescentUpd{T}, X, W, H) where T = CoordinateDescentState{T}(X, W, H)
 
 function evaluate_objv(::CoordinateDescentUpd{T}, s::CoordinateDescentState{T}, X, W, H) where T
     mul!(s.WH, W, H)
@@ -133,8 +129,6 @@ function _update_coord_descent!(s::CoordinateDescentState{T}, X, W, H,
         permutation = 1:n_components
     end
 
-    violation = zero(eltype(X))
-
     for t in permutation
         for i in 1:n_samples
              # gradient = GW[t, i] where GW = np.dot(W, HHt) - XHt
@@ -144,10 +138,6 @@ function _update_coord_descent!(s::CoordinateDescentState{T}, X, W, H,
                 grad += HHt[t, r] * W[i, r]
             end
 
-            # projected gradient
-            pg = W[i, t] == 0 ? min(zero(grad), grad) : grad
-            violation += abs(pg)
-
             # Hessian
             hess = HHt[t, t]
             if hess != 0
@@ -155,27 +145,21 @@ function _update_coord_descent!(s::CoordinateDescentState{T}, X, W, H,
             end
         end
     end
-    return violation
+    return
 end
 
 
 function update_wh!(upd::CoordinateDescentUpd{T}, s::CoordinateDescentState{T},
                     X::AbstractArray{T}, W::AbstractArray{T}, H::AbstractArray{T}) where T
-    violation = zero(T)
-
     # update W
-    violation += _update_coord_descent!(s, X, W, H, upd.l₁W, upd.l₂W, upd.shuffle, true)
+    _update_coord_descent!(s, X, W, H, upd.l₁W, upd.l₂W, upd.shuffle, true)
 
     # update H
     if upd.update_H
         Wt = transpose(W)
         Ht = transpose(H)
         Xt = transpose(X)
-        violation += _update_coord_descent!(s, Xt, Ht, Wt, upd.l₁H, upd.l₂H, upd.shuffle, false)
+        _update_coord_descent!(s, Xt, Ht, Wt, upd.l₁H, upd.l₂H, upd.shuffle, false)
     end
-
-    s.violation = violation
-    if s.violation_init !== nothing
-        s.violation_init = violation
-    end
+    return
 end
