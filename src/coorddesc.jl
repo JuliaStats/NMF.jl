@@ -48,19 +48,20 @@ struct CoordinateDescent{T} <: AbstractNMFAlgorithm
 end
 
 
-solve!(alg::CoordinateDescent{T}, X, W, H; io::IO=stdout) where {T} =
-    nmf_skeleton!(io, CoordinateDescentUpd{T}(alg.α, alg.l₁ratio, alg.regularization, alg.shuffle, alg.update_H),
+solve!(alg::CoordinateDescent{T}, X, W, H; io::IO=stdout, rng::AbstractRNG=default_rng()) where {T} =
+    nmf_skeleton!(io, CoordinateDescentUpd{T}(alg.α, alg.l₁ratio, alg.regularization, alg.shuffle, alg.update_H, rng),
                   X, W, H, alg.maxiter, alg.verbose, alg.tol)
 
 
-struct CoordinateDescentUpd{T} <: NMFUpdater{T}
+struct CoordinateDescentUpd{T,R<:AbstractRNG} <: NMFUpdater{T}
     l₁W::T
     l₂W::T
     l₁H::T
     l₂H::T
     shuffle::Bool
     update_H::Bool
-    function CoordinateDescentUpd{T}(α::T, l₁ratio::T, regularization::Symbol, shuffle::Bool, update_H::Bool) where {T}
+    rng::R
+    function CoordinateDescentUpd{T}(α::T, l₁ratio::T, regularization::Symbol, shuffle::Bool, update_H::Bool, rng::R) where {T,R<:AbstractRNG}
         αW = zero(T)
         αH = zero(T)
 
@@ -72,12 +73,13 @@ struct CoordinateDescentUpd{T} <: NMFUpdater{T}
             αW = α
         end
 
-        new{T}(αW*l₁ratio,
-               αW*(1-l₁ratio),
-               αH*l₁ratio,
-               αH*(1-l₁ratio),
-               shuffle,
-               update_H)
+        new{T,R}(αW*l₁ratio,
+                 αW*(1-l₁ratio),
+                 αH*l₁ratio,
+                 αH*(1-l₁ratio),
+                 shuffle,
+                 update_H,
+                 rng)
     end
 end
 
@@ -104,7 +106,7 @@ function evaluate_objv(::CoordinateDescentUpd{T}, s::CoordinateDescentState{T}, 
 end
 
 "Updates W only"
-function _update_coord_descent!(s::CoordinateDescentState{T}, X, W, H, 
+function _update_coord_descent!(rng::AbstractRNG, s::CoordinateDescentState{T}, X, W, H,
                                 l1_reg, l2_reg, shuffle::Bool, W_flag::Bool) where T
     Ht = transpose(H)
     HHt = s.HHt
@@ -126,7 +128,7 @@ function _update_coord_descent!(s::CoordinateDescentState{T}, X, W, H,
         XHt .-= l1_reg
     end
     if shuffle
-        permutation = randperm(n_components)
+        permutation = randperm(rng, n_components)
     else
         permutation = 1:n_components
     end
@@ -154,14 +156,14 @@ end
 function update_wh!(upd::CoordinateDescentUpd{T}, s::CoordinateDescentState{T},
                     X::AbstractArray{T}, W::AbstractArray{T}, H::AbstractArray{T}) where T
     # update W
-    _update_coord_descent!(s, X, W, H, upd.l₁W, upd.l₂W, upd.shuffle, true)
+    _update_coord_descent!(upd.rng, s, X, W, H, upd.l₁W, upd.l₂W, upd.shuffle, true)
 
     # update H
     if upd.update_H
         Wt = transpose(W)
         Ht = transpose(H)
         Xt = transpose(X)
-        _update_coord_descent!(s, Xt, Ht, Wt, upd.l₁H, upd.l₂H, upd.shuffle, false)
+        _update_coord_descent!(upd.rng, s, Xt, Ht, Wt, upd.l₁H, upd.l₂H, upd.shuffle, false)
     end
     return
 end

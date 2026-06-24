@@ -50,7 +50,7 @@ function spa(X::AbstractMatrix{T}, k::Integer; nnls_alg::Tuple{Symbol, Symbol}=(
 end
 
 # calculate statistics for result
-function solve!(alg::SPA, X, W, H; io::IO=stdout)
+function solve!(alg::SPA, X, W, H; io::IO=stdout, rng::AbstractRNG=default_rng())
     T = eltype(W)
     if alg.obj == :mse
         objv = convert(T, 0.5) * sqL2dist(X, W*H)

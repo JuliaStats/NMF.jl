@@ -66,6 +66,46 @@ end
     @test occursin("objv", String(take!(buf)))
 end
 
+@testset "rng reproducibility" begin
+    p, n, k = 6, 8, 5
+    Wg = max.(rand(MersenneTwister(1), p, k) .- 0.3, 0.0)
+    Hg = max.(rand(MersenneTwister(2), k, n) .- 0.3, 0.0)
+    X = Wg * Hg
+
+    # randinit: same rng reproduces, distinct rng differs
+    W1, H1 = NMF.randinit(X, k; rng=MersenneTwister(42))
+    W2, H2 = NMF.randinit(X, k; rng=MersenneTwister(42))
+    W3, H3 = NMF.randinit(X, k; rng=MersenneTwister(43))
+    @test W1 == W2 && H1 == H2
+    @test W1 != W3
+
+    # nndsvd :ar exercises both the randomized SVD and the random fill
+    Wa1, Ha1 = NMF.nndsvd(X, k; variant=:ar, rng=MersenneTwister(42))
+    Wa2, Ha2 = NMF.nndsvd(X, k; variant=:ar, rng=MersenneTwister(42))
+    Wa3, Ha3 = NMF.nndsvd(X, k; variant=:ar, rng=MersenneTwister(43))
+    @test Wa1 == Wa2 && Ha1 == Ha2
+    @test Wa1 != Wa3
+
+    # CoordinateDescent's shuffle draws its coordinate order from rng
+    alg = NMF.CoordinateDescent{Float64}(; maxiter=20, shuffle=true)
+    W0, H0 = NMF.randinit(X, k; rng=MersenneTwister(99))
+    Wc1, Hc1 = copy(W0), copy(H0); NMF.solve!(alg, X, Wc1, Hc1; rng=MersenneTwister(5))
+    Wc2, Hc2 = copy(W0), copy(H0); NMF.solve!(alg, X, Wc2, Hc2; rng=MersenneTwister(5))
+    Wc3, Hc3 = copy(W0), copy(H0); NMF.solve!(alg, X, Wc3, Hc3; rng=MersenneTwister(6))
+    @test Wc1 == Wc2 && Hc1 == Hc2
+    @test Wc1 != Wc3
+
+    # nnmf threads rng end-to-end and reproduces without seeding the global RNG
+    r1 = nnmf(X, k; alg=:cd, init=:nndsvdar, rng=MersenneTwister(7))
+    r2 = nnmf(X, k; alg=:cd, init=:nndsvdar, rng=MersenneTwister(7))
+    @test r1.W == r2.W && r1.H == r2.H
+
+    # a passed rng leaves the global stream untouched
+    Random.seed!(1234); a = rand()
+    Random.seed!(1234); nnmf(X, k; alg=:cd, init=:nndsvdar, rng=MersenneTwister(7)); b = rand()
+    @test a == b
+end
+
 @testset "Result construction" begin
     W = ones(5, 2); H = ones(2, 8)
     ref = NMF.Result{Float64}(W, H, 42, true, 1.5)

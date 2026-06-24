@@ -33,7 +33,7 @@ struct ProjectedALS{T} <: AbstractNMFAlgorithm
     end
 end
 
-solve!(alg::ProjectedALS, X, W, H; io::IO=stdout) =
+solve!(alg::ProjectedALS, X, W, H; io::IO=stdout, rng::AbstractRNG=default_rng()) =
     nmf_skeleton!(io, ProjectedALSUpd(alg.update_H, alg.lambda_w, alg.lambda_h),
                   X, W, H, alg.maxiter, alg.verbose, alg.tol)
 

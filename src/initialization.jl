@@ -1,19 +1,20 @@
 
 # random initialization
 
-function randinit(nrows::Integer, ncols::Integer, k::Integer, T::DataType; normalize::Bool=false, zeroh::Bool=false)
-    W = rand(T, nrows, k)
+function randinit(nrows::Integer, ncols::Integer, k::Integer, T::DataType;
+                  normalize::Bool=false, zeroh::Bool=false, rng::AbstractRNG=default_rng())
+    W = rand(rng, T, nrows, k)
     if normalize
         normalize1_cols!(W)
     end
 
-    H = zeroh ? zeros(T, k, ncols) : rand(T, k, ncols)
+    H = zeroh ? zeros(T, k, ncols) : rand(rng, T, k, ncols)
     return W, H
 end
 
-function randinit(X, k::Integer; normalize::Bool=false, zeroh::Bool=false)
+function randinit(X, k::Integer; normalize::Bool=false, zeroh::Bool=false, rng::AbstractRNG=default_rng())
     p, n = size(X)
-    randinit(p, n, k, eltype(X); normalize=normalize, zeroh=zeroh)
+    randinit(p, n, k, eltype(X); normalize, zeroh, rng)
 end
 
 # NNDSVD: Non-Negative Double Singular Value Decomposition
@@ -23,7 +24,7 @@ end
 #   C. Boutsidis, and E. Gallopoulos. SVD based initialization: A head
 #   start for nonnegative matrix factorization. Pattern Recognition, 2007.
 #
-function _nndsvd!(U, s, V, X, W, Ht, inith::Bool, variant::Int)
+function _nndsvd!(rng::AbstractRNG, U, s, V, X, W, Ht, inith::Bool, variant::Int)
 
     k = size(W, 2)
     T = eltype(W)
@@ -46,7 +47,7 @@ function _nndsvd!(U, s, V, X, W, Ht, inith::Bool, variant::Int)
 
         vj = v0
         if variant == 2
-            vj *= rand(T)
+            vj *= rand(rng, T)
         end
 
         if inith
@@ -71,7 +72,21 @@ function _nndsvd!(U, s, V, X, W, Ht, inith::Bool, variant::Int)
     end
 end
 
-function nndsvd(X, k::Integer; zeroh::Bool=false, variant::Symbol=:std, initdata=nothing)
+# A randomized SVD: a basis for an approximate range of X is found by projecting
+# onto a random test matrix, then the SVD is computed on that restriction. The
+# only randomness is the test matrix, so `rng` makes the result reproducible.
+# (Reproduces `RandomizedLinAlg.rsvd(X, k)`, which offers no way to pass an rng.)
+function _rsvd(rng::AbstractRNG, X, k::Integer)
+    m = size(X, 1)
+    k <= m || throw(ArgumentError("Cannot find $k singular vectors of a $m-row matrix."))
+    Ω = randn(rng, size(X, 2), k)
+    Q = Matrix(qr!(X * Ω).Q)
+    S = svd!(Q' * X)
+    return (Q * S.U)[:, 1:k], S.S[1:k], (S.Vt[1:k, :])'
+end
+
+function nndsvd(X, k::Integer; zeroh::Bool=false, variant::Symbol=:std, initdata=nothing,
+                rng::AbstractRNG=default_rng())
 
     p, n = size(X)
     T = eltype(X)
@@ -80,17 +95,17 @@ function nndsvd(X, k::Integer; zeroh::Bool=false, variant::Symbol=:std, initdata
            variant == :ar  ? 2 :
            throw(ArgumentError("Invalid value for variant"))
 
-    U, s, V = initdata === nothing ? rsvd(X, k) : (initdata.U[:,1:k], initdata.S[1:k], initdata.V[:,1:k])
+    U, s, V = initdata === nothing ? _rsvd(rng, X, k) : (initdata.U[:,1:k], initdata.S[1:k], initdata.V[:,1:k])
 
     W = Matrix{T}(undef, p, k)
     H = Matrix{T}(undef, k, n)
     if zeroh
         Ht = reshape(view(H,:,:), (n, k))
-        _nndsvd!(U, s, V, X, W, Ht, false, ivar)
+        _nndsvd!(rng, U, s, V, X, W, Ht, false, ivar)
         fill!(H, 0)
     else
         Ht = Matrix{T}(undef, n, k)
-        _nndsvd!(U, s, V, X, W, Ht, true, ivar)
+        _nndsvd!(rng, U, s, V, X, W, Ht, true, ivar)
         for j = 1:k
             for i = 1:n
                 H[j,i] = Ht[i,j]

@@ -30,7 +30,7 @@ struct GreedyCD{T} <: AbstractNMFAlgorithm
     end
 end
 
-solve!(alg::GreedyCD{T}, X, W, H; io::IO=stdout) where T =
+solve!(alg::GreedyCD{T}, X, W, H; io::IO=stdout, rng::AbstractRNG=default_rng()) where T =
     nmf_skeleton!(io, GreedyCDUpd{T}(alg.update_H, alg.lambda_w, alg.lambda_h), X, W, H, alg.maxiter, alg.verbose, alg.tol)
 
 

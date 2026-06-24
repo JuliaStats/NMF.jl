@@ -11,7 +11,8 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
               H0::Union{AbstractMatrix{T}, Nothing}=nothing,
               update_H::Bool=true,
               verbose::Bool=false,
-              io::IO=stdout) where T
+              io::IO=stdout,
+              rng::AbstractRNG=default_rng()) where T
 
     eltype(X) <: Number && all(t -> t >= zero(T), X) || throw(ArgumentError("The elements of X must be non-negative."))
 
@@ -41,13 +42,13 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
 
     # perform initialization
     if init == :random
-        W, H = randinit(X, k; zeroh=!initH, normalize=true)
+        W, H = randinit(X, k; zeroh=!initH, normalize=true, rng)
     elseif init == :nndsvd
-        W, H = nndsvd(X, k; zeroh=!initH, initdata=initdata)
+        W, H = nndsvd(X, k; zeroh=!initH, initdata=initdata, rng)
     elseif init == :nndsvda
-        W, H = nndsvd(X, k; variant=:a, zeroh=!initH, initdata=initdata)
+        W, H = nndsvd(X, k; variant=:a, zeroh=!initH, initdata=initdata, rng)
     elseif init == :nndsvdar
-        W, H = nndsvd(X, k; variant=:ar, zeroh=!initH, initdata=initdata)
+        W, H = nndsvd(X, k; variant=:ar, zeroh=!initH, initdata=initdata, rng)
     elseif init == :spa
         W, H = spa(X, k)
     elseif init == :custom
@@ -60,22 +61,22 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
 
     # choose algorithm
     if alg == :projals
-        ret = solve_replicates!(ProjectedALS{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH, io)
+        ret = solve_replicates!(ProjectedALS{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH, io, rng)
     elseif alg == :alspgrad
-        ret = solve_replicates!(ALSPGrad{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH, io)
+        ret = solve_replicates!(ALSPGrad{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH, io, rng)
     elseif alg == :multmse
-        ret = solve_replicates!(MultUpdate{T}(obj=:mse, maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH, io)
+        ret = solve_replicates!(MultUpdate{T}(obj=:mse, maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH, io, rng)
     elseif alg == :multdiv
-        ret = solve_replicates!(MultUpdate{T}(obj=:div, maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH, io)
+        ret = solve_replicates!(MultUpdate{T}(obj=:div, maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH, io, rng)
     elseif alg == :cd
-        ret = solve_replicates!(CoordinateDescent{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH, io)
+        ret = solve_replicates!(CoordinateDescent{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH, io, rng)
     elseif alg == :greedycd
-        ret = solve_replicates!(GreedyCD{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH, io)
+        ret = solve_replicates!(GreedyCD{T}(maxiter=maxiter, tol=tol, verbose=verbose, update_H=update_H), X, W, H; replicates, initH, io, rng)
     elseif alg == :spa
         if init != :spa
             throw(ArgumentError("Invalid value for init, use :spa instead."))
         end
-        ret = solve_replicates!(SPA(obj=:mse), X, W, H; replicates, initH, io)
+        ret = solve_replicates!(SPA(obj=:mse), X, W, H; replicates, initH, io, rng)
     else
         throw(ArgumentError("Invalid algorithm."))
     end
@@ -83,15 +84,15 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
     return ret
 end
 
-function solve_replicates!(alginst, X, W, H; replicates, initH, io::IO=stdout)
-    ret = solve!(alginst, X, W, H; io)
+function solve_replicates!(alginst, X, W, H; replicates, initH, io::IO=stdout, rng::AbstractRNG=default_rng())
+    ret = solve!(alginst, X, W, H; io, rng)
     k = size(W, 2)
 
     # replicates
     minobjv = ret.objvalue
     for _ in 2:replicates
-        Wrand, Hrand = randinit(X, k; zeroh=!initH, normalize=true)
-        tmp = solve!(alginst, X, Wrand, Hrand; io)
+        Wrand, Hrand = randinit(X, k; zeroh=!initH, normalize=true, rng)
+        tmp = solve!(alginst, X, Wrand, Hrand; io, rng)
         if minobjv > tmp.objvalue
             ret = tmp
             minobjv = tmp.objvalue
