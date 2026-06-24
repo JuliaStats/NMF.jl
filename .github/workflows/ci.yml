@@ -11,25 +11,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version:
-          - 'min'
-          - '1' # automatically expands to the latest stable 1.x release of Julia
-        os:
-          - ubuntu-latest
-        arch:
-          - x64
-          #- x86  see #29
         include:
-          # test macOS and Windows with latest Julia only
-          - os: macOS-latest
-            arch: x64
-            version: 1
-          - os: windows-latest
-            arch: x64
-            version: 1
-          #- os: windows-latest
-          #  arch: x86
-          #  version: 1
+          - { os: ubuntu-latest,  arch: x64,     version: 'min' }
+          - { os: ubuntu-latest,  arch: x64,     version: '1' }
+          - { os: macOS-latest,   arch: aarch64, version: '1' }
+          - { os: windows-latest, arch: x64,     version: '1' }
+          # x86 builds disabled, see #29
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
