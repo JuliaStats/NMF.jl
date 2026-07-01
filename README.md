@@ -3,351 +3,68 @@
 A Julia package for non-negative matrix factorization (NMF).
 
 [![CI](https://github.com/JuliaStats/NMF.jl/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/JuliaStats/NMF.jl/actions/workflows/ci.yml)
+[![Documentation (stable)](https://img.shields.io/badge/docs-stable-blue.svg)](https://JuliaStats.github.io/NMF.jl/stable)
+[![Documentation (dev)](https://img.shields.io/badge/docs-dev-blue.svg)](https://JuliaStats.github.io/NMF.jl/dev)
 [![CodeCov](https://codecov.io/github/JuliaStats/NMF.jl/badge.svg?branch=master)](https://codecov.io/github/JuliaStats/NMF.jl?branch=master)
 [![Aqua QA](https://juliatesting.github.io/Aqua.jl/dev/assets/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 ---------------------------
 
-## Development Status
+## Overview
 
-**Note:** Nonnegative Matrix Factorization is an area of active research. New algorithms are proposed every year. Contributions are very welcomed.
+*Non-negative matrix factorization (NMF)* factorizes a non-negative matrix `X`
+into the product of two lower-rank non-negative matrices `W` and `H`, such that
+`W*H` optimally approximates `X` in some sense. Such techniques are widely used
+in text mining, image analysis, and recommendation systems.
 
-#### Done
+A factorization proceeds in two stages: an *initialization* function produces
+starting factors `W` and `H`, and an *optimization* algorithm refines them. The
+high-level [`nnmf`](https://JuliaStats.github.io/NMF.jl/stable) function runs
+both stages in a single call.
 
-- Lee & Seung's Multiplicative Update (for both MSE & Divergence objectives)
-- (Naive) Projected Alternate Least Squared
-- ALS Projected Gradient Methods
-- Coordinate Descent Methods
-- Random Initialization
-- NNDSVD Initialization
+Apart from `nnmf`, the package's names are not exported; refer to them with the
+`NMF.` prefix (for example `NMF.solve!`, `NMF.randinit`).
+
+## Installation
+
+```julia
+using Pkg
+Pkg.add("NMF")
+```
+
+## Quick start
+
+```julia
+using NMF
+
+X = rand(8, 6)                     # a non-negative matrix
+r = nnmf(X, 3; alg=:multmse, maxiter=50, tol=1.0e-4)
+W, H = r.W, r.H                    # the factors of the approximation X ≈ W*H
+```
+
+See the [documentation](https://JuliaStats.github.io/NMF.jl/stable) for the full
+list of initialization methods and factorization algorithms, their options, and
+further examples.
+
+## Development status
+
+**Note:** Non-negative matrix factorization is an area of active research. New
+algorithms are proposed every year. Contributions are very welcome.
+
+Implemented:
+
+- Lee & Seung's multiplicative update (for both MSE and divergence objectives)
+- (Naive) projected alternating least squares
+- ALS projected gradient methods
+- Coordinate descent methods
+- Random initialization
+- NNDSVD initialization
 - Sparse NMF
 - Separable NMF
 
-#### To do
+Planned:
 
 - Probabilistic NMF
 
-See also [NMFMerge](https://github.com/HolyLab/NMFMerge.jl), which can augment any least-squares NMF algorithm.
-
-## Overview
-
-*Non-negative Matrix Factorization (NMF)* generally refers to the techniques for factorizing a non-negative matrix ``X`` into the product of two lower rank matrices ``W`` and ``H``, such that ``WH`` optimally approximates ``X`` in some sense. Such techniques are widely used in text mining, image analysis, and recommendation systems.
-
-This package provides two sets of tools, respectively for *initilization* and *optimization*. A typical NMF procedure consists of two steps: (1) use an initilization function that initialize ``W`` and ``H``; and (2) use an optimization algorithm to pursue the optimal solution.
-
-Most types and functions (except the high-level function ``nnmf``) in this package are not exported. Users are encouraged to use them with the prefix ``NMF.``. This way allows us to use shorter names within the package and makes the codes more explicit and clear on the user side.
-
-
-## High-Level Interface
-
-The package provides a high-level function ``nnmf`` that runs the entire procedure (initialization + optimization):
-
-**nnmf**(X, k, ...)
-
-This function factorizes the input matrix ``X`` into the product of two non-negative matrices ``W`` and ``H``.
-
-In general, it returns a result instance of type ``NMF.Result``, which is defined as
-
-```julia
-struct Result
-    W::Matrix{Float64}    # W matrix
-    H::Matrix{Float64}    # H matrix
-    niters::Int           # number of elapsed iterations
-    converged::Bool       # whether the optimization procedure converges
-    objvalue::Float64     # objective value of the last step
-end
-```
-
-The function supports the following keyword arguments:
-
-- ``init``:  A symbol that indicates the initialization method (default = ``:nndsvdar``).
-
-    This argument accepts the following values:
-
-    - ``random``:  matrices filled with uniformly random values
-    - ``nndsvd``:  standard version of NNDSVD
-    - ``nndsvda``:  NNDSVDa variant
-    - ``nndsvdar``:  NNDSVDar variant
-    - ``spa``: Successive Projection Algorithm
-    - ``custom``: use custom matrices ``W0`` and ``H0``
-
-    With the `nndsvd` variants, you can optionally supply the SVD result via `initdata`, e.g., `initdata=svd(X)`. If not supplied, the factorization is computed using a randomized svd (`rsvd` from [RandomizedLinAlg](https://github.com/JuliaLinearAlgebra/RandomizedLinAlg.jl)).
-
-- ``alg``:  A symbol that indicates the factorization algorithm (default = ``:greedycd``).
-
-    This argument accepts the following values:
-
-    - ``multmse``:  Multiplicative update (using MSE as objective)
-    - ``multdiv``:  Multiplicative update (using divergence as objective)
-    - ``projals``:  (Naive) Projected Alternate Least Square
-    - ``alspgrad``:  Alternate Least Square using Projected Gradient Descent
-    - ``cd``: Coordinate Descent solver that uses Fast Hierarchical Alternating Least Squares (implemetation similar to scikit-learn)
-    - ``greedycd``: Greedy Coordinate Descent
-    - ``spa``: Successive Projection Algorithm
-
-- ``maxiter``: Maximum number of iterations (default = ``100``).
-
-- ``tol``: tolerance of changes upon convergence (default = ``1.0e-6``).
-
-- ``replicates``: Number of times to perform factorization (default = ``1``).
-
-- ``W0``: Option for custom initialization (default = ``nothing``).
-
-- ``H0``: Option for custom initialization (default = ``nothing``).
-
-  **Note:** ``W0`` and ``H0`` may be overwritten. If one needs to avoid it, please pass in copies themselves.
-
-- ``update_H``: Option for specifying whether to update H (default = ``true``).
-
-- ``verbose``: whether to show procedural information (default = ``false``).
-
-
-
-## Initialization
-
-- **NMF.randinit**(X, k[; zeroh=false, normalize=false])
-
-    Initialize ``W`` and ``H`` given the input matrix ``X`` and the rank ``k``. This function returns a pair ``(W, H)``.
-
-    Suppose the size of ``X`` is ``(p, n)``, then the size of ``W`` and ``H`` are respectively ``(p, k)`` and ``(k, n)``.
-
-    Usage:
-
-    ```julia
-    W, H = NMF.randinit(X, 3)
-    ```
-
-    For some algorithms (*e.g.* ALS), only ``W`` needs to be initialized. For such cases, one may set the keyword argument ``zeroh``to be ``true``, then in the output ``H`` will be simply a zero matrix of size ``(k, n)``.
-
-    Another keyword argument is ``normalize``. If ``normalize`` is set to ``true``, columns of ``W`` will be normalized such that each column sum to one.
-
-- **NMF.nndsvd**(X, k[; zeroh=false, variant=:std])
-
-    Use the *Non-Negative Double Singular Value Decomposition (NNDSVD)* algorithm to initialize ``W`` and ``H``.
-
-    Reference: C. Boutsidis, and E. Gallopoulos. SVD based initialization: A head start for nonnegative matrix factorization. Pattern Recognition, 2007.
-
-    Usage:
-
-    ```julia
-    W, H = NMF.nndsvd(X, k)
-    ```
-
-    This function has two keyword arguments:
-
-    - ``zeroh``: when set to ``true``, the output ``H`` is simply a zero matrix of size ``(k, n)``; when set to ``false`` (the default), ``H`` is initialized. Setting it to ``true`` is useful for algorithms (*e.g.* ALS) where only ``W`` needs to be initialized.
-    - ``variant``: the variant of the algorithm. Default is ``std``, meaning to use the standard version, which would generate a rather sparse ``W``. Other values are ``a`` and ``ar``, respectively corresponding to the variants: *NNDSVDa* and *NNDSVDar*. Particularly, ``ar`` is recommended for dense NMF.
-
-
-- **NMF.spa**(X, k[; nnls_alg=(:pivot, :cache)])
-
-    Use the *Successive Projection Algorithm (SPA)* to initialize ``W`` and ``H``.
-
-    Reference: N. Gillis and S. A. Vavasis, Fast and robust recursive algorithms for separable nonnegative matrix factorization, IEEE Transactions on Pattern Analysis and Machine Intelligence, vol. 36, no. 4, pp. 698-714, 2013.
-
-    Usage:
-
-    ```julia
-    W, H = NMF.spa(X, k)
-    ```
-
-    - ``nnls_alg``: the ``(alg, variant)`` pair forwarded to
-      ``NonNegLeastSquares.nonneg_lsq`` when solving for ``H``. Default is
-      ``(:pivot, :cache)``.
-
-
-## Factorization Algorithms
-
-This package provides multiple factorization algorithms. Each algorithm corresponds to a type. One can create an algorithm *instance* by choosing a type and specifying the options, and run the algorithm using ``NMF.solve!``:
-
-Each constructor is keyword-only and (except ``SPA``) parameterized by the element type ``T`` (e.g. ``Float64``); instantiate it as ``MultUpdate{Float64}(; …)``. The defaults below depend on ``T``.
-
-#### The NMF.solve! Function
-
-**NMF.solve!**(alg, X, W, H)
-
-Use the algorithm ``alg`` to factorize ``X`` into ``W`` and ``H``.
-
-Here, ``W`` and ``H`` must be pre-allocated matrices (respectively of size ``(p, k)`` and ``(k, n)``). ``W`` and ``H`` must be appropriately initialized before this function is invoked. For some algorithms, both ``W`` and ``H`` must be initialized (*e.g.* multiplicative updating); while for others, only ``W`` needs to be initialized (*e.g.* ALS).
-
-The matrices ``W`` and ``H`` are updated in place.
-
-
-#### Algorithms
-
-- **Multiplicative Updating**
-
-    Reference: Daniel D. Lee and H. Sebastian Seung. Algorithms for Non-negative Matrix Factorization. Advances in NIPS, 2001.
-
-    This algorithm has two different kind of objectives: minimizing mean-squared-error (``:mse``) and minimizing divergence (``:div``). Both ``W`` and ``H`` need to be initialized.
-
-    ```julia
-    MultUpdate{T}(; obj::Symbol=:mse,        # objective, either :mse or :div
-                    maxiter::Integer=100,    # maximum number of iterations
-                    verbose::Bool=false,     # whether to show procedural information
-                    tol::Real=cbrt(eps(T)),  # tolerance of changes on W and H upon convergence
-                    update_H::Bool=true,     # whether to update H
-                    lambda_w::Real=zero(T),  # L1 regularization coefficient for W
-                    lambda_h::Real=zero(T))  # L1 regularization coefficient for H
-    ```
-
-    **Note:** the values above are default values for the keyword arguments. One can override part (or all) of them.
-
-
-- **(Naive) Projected Alternate Least Square**
-
-    This algorithm alternately updates ``W`` and ``H`` while holding the other fixed. Each update step solves ``W`` or ``H`` without enforcing the non-negativity constrait, and forces all negative entries to zeros afterwards. Only ``W`` needs to be initialized.
-
-    ```julia
-    ProjectedALS{T}(; maxiter::Integer=100,        # maximum number of iterations
-                      verbose::Bool=false,         # whether to show procedural information
-                      tol::Real=cbrt(eps(T)),      # tolerance of changes on W and H upon convergence
-                      update_H::Bool=true,         # whether to update H
-                      lambda_w::Real=cbrt(eps(T)), # L2 regularization coefficient for W
-                      lambda_h::Real=cbrt(eps(T))) # L2 regularization coefficient for H
-    ```
-
-- **Alternate Least Square Using Projected Gradient Descent**
-
-    Reference: Chih-Jen Lin. Projected Gradient Methods for Non-negative Matrix Factorization. Neural Computing, 19 (2007).
-
-    This algorithm adopts the alternate least square strategy. A efficient projected gradient descent method is used to solve each sub-problem. Both ``W`` and ``H`` need to be initialized.
-
-    ```julia
-    ALSPGrad{T}(; maxiter::Integer=100,      # maximum number of iterations (in main procedure)
-                  maxsubiter::Integer=200,   # maximum number of iterations in solving each sub-problem
-                  tol::Real=cbrt(eps(T)),    # tolerance of changes on W and H upon convergence
-                  tolg::Real=eps(T)^(1/4),   # tolerable gradient norm in sub-problem (first-order optimality)
-                  update_H::Bool=true,       # whether to update H
-                  verbose::Bool=false)       # whether to show procedural information
-    ```
-
-- **Coordinate Descent solver with Fast Hierarchical Alternating Least Squares**
-
-    Reference: Cichocki, Andrzej, and P. H. A. N. Anh-Huy. Fast local algorithms for large scale nonnegative matrix and tensor factorizations. IEICE transactions on fundamentals of electronics, communications and computer sciences 92.3: 708-721 (2009).
-
-    Sequential constrained minimization on a set of squared Euclidean distances over W and H matrices. Uses l_1 and l_2 penalties to enforce sparsity.
-
-    ```julia
-    CoordinateDescent{T}(; maxiter::Integer=100,      # maximum number of iterations (in main procedure)
-                           verbose::Bool=false,       # whether to show procedural information
-                           tol::Real=cbrt(eps(T)),    # tolerance of changes on W and H upon convergence
-                           update_H::Bool=true,       # whether to update H
-                           α::Real=zero(T),           # constant that multiplies the regularization terms
-                           regularization=:both,      # select whether the regularization affects the components (H), the transformation (W), both or none of them (:components, :transformation, :both, :none)
-                           l₁ratio::Real=zero(T),     # l1 / l2 regularization mixing parameter (in [0; 1])
-                           shuffle::Bool=false)       # if true, randomize the order of coordinates in the CD solver
-    ```
-
-- **Greedy Coordinate Descent**
-
-    Reference: Cho-Jui Hsieh and Inderjit S. Dhillon. Fast coordinate descent methods with variable selection for non-negative matrix factorization. In Proceedings of the 17th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, 1064–1072 (2011).
-
-    This algorithm is a fast coordinate descent method with variable selection.
-    Both ``W`` and ``H`` need to be initialized.
-
-    ```julia
-    GreedyCD{T}(; maxiter::Integer=100,   # maximum number of iterations (in main procedure)
-                  verbose::Bool=false,    # whether to show procedural information
-                  tol::Real=cbrt(eps(T)), # tolerance of changes on W and H upon convergence
-                  update_H::Bool=true,    # whether to update H
-                  lambda_w::Real=zero(T), # L1 regularization coefficient for W
-                  lambda_h::Real=zero(T)) # L1 regularization coefficient for H
-    ```
-
-- **Successive Projection Algorithm for Separable NMF**
-
-    Reference: N. Gillis and S. A. Vavasis, "Fast and robust recursive algorithms for separable nonnegative matrix factorization," IEEE Transactions on Pattern Analysis and Machine Intelligence, vol. 36, no. 4, pp. 698-714, 2013.
-
-    A separable matrix X can be written as ``X = WH = W[I V]P``, where ``W`` has rank ``k``, ``I`` is the identity matrix, the sum of the entries of each column of ``V`` is at most one, and ``P`` is a permutation matrix to arange the columns of ``[I V]`` randomly. Separable NMF aims to decompose a separable matrix ``X`` into two nonnegative factor matrices ``W`` and ``H``, so that ``WH`` is equal to ``X``. This algorithm is used for separable NMF. Both ``W`` and ``H`` need to be initialized by ``init=:spa``.
-
-    ```julia
-    SPA(; obj::Symbol=:mse)   # objective :mse or :div
-    ```
-
-## Examples
-
-Here are examples that demonstrate how to use this package to factorize a non-negative dense matrix.
-
-#### Use High-level Function: nnmf
-
-```julia
-... # prepare input matrix X
-
-r = nnmf(X, k; alg=:multmse, maxiter=30, tol=1.0e-4)
-
-W = r.W
-H = r.H
-```
-
-#### Use Multiplicative Update
-
-```julia
-import NMF
-
- # initialize
-W, H = NMF.randinit(X, 5)
-
- # optimize
-NMF.solve!(NMF.MultUpdate{Float64}(obj=:mse,maxiter=100), X, W, H)
-```
-
-#### Use Naive ALS
-
-```julia
-import NMF
-
- # initialize
-W, H = NMF.randinit(X, 5)
-
- # optimize
-NMF.solve!(NMF.ProjectedALS{Float64}(maxiter=50), X, W, H)
-```
-
-#### Use ALS with Projected Gradient Descent
-
-```julia
-import NMF
-
- # initialize
-W, H = NMF.nndsvd(X, 5, variant=:ar)
-
- # optimize
-NMF.solve!(NMF.ALSPGrad{Float64}(maxiter=50, tolg=1.0e-6), X, W, H)
-```
-
-#### Use Coordinate Descent
-
-```julia
-import NMF
-
- # initialize
-W, H = NMF.nndsvd(X, 5, variant=:ar)
-
- # optimize
-NMF.solve!(NMF.CoordinateDescent{Float64}(maxiter=50, α=0.5, l₁ratio=0.5), X, W, H)
-```
-
-#### Use Greedy Coordinate Descent
-
-```julia
-import NMF
-
- # initialize
-W, H = NMF.nndsvd(X, 5, variant=:ar)
-
- # optimize
-NMF.solve!(NMF.GreedyCD{Float64}(maxiter=50), X, W, H)
-```
-
-#### Use Successive Projection Algorithm for Separable NMF
-
-```julia
-import NMF
-
- # initialize
-W, H = NMF.spa(X, 5)
-
- # optimize
-NMF.solve!(NMF.SPA(obj=:mse), X, W, H)
-```
+See also [NMFMerge](https://github.com/HolyLab/NMFMerge.jl), which can augment
+any least-squares NMF algorithm.

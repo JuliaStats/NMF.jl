@@ -4,3 +4,5 @@ Manifest-v*.toml
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
+
+/docs/build/
