@@ -18,24 +18,6 @@ function projgradnorm(g, x)
     return sqrt(v)
 end
 
-# Determine the maximum step size we can take without
-# all elements of A becoming zero
-# The new value of A would be A = A - α*G
-function maxstep(G, A)
-    T = typeof(one(eltype(A)) / one(eltype(G)))
-    αmax = zero(T)
-    for i = 1:length(G)
-        g = G[i]
-        if g >= 0
-            αmax = max(αmax, A[i] / g)
-        else
-            αmax = convert(T, Inf)
-            break
-        end
-    end
-    return αmax
-end
-
 ## sub-routines for updating H
 
 struct ALSGradUpdH_State{T}

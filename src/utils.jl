@@ -1,14 +1,5 @@
 # Numerical utilities to support implementation
 
-function printf_mat(io::IO, x::AbstractMatrix)
-    @inbounds for i = 1:size(x,1)
-        for j = 1:size(x,2)
-            @printf(io, "%8.4f ", x[i,j])
-        end
-        println(io)
-    end
-end
-
 function adddiag!(A::Matrix, a::Number)
     m, n = size(A)
     m == n || error("A must be square.")

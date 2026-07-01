@@ -39,6 +39,12 @@
         ret = NMF.solve!(NMF.SPA(obj=:mse), X, W, H)
         @test ret isa NMF.Result{T}
         @test ret.converged
+
+        # obj=:div scores the same factorization by generalized KL divergence.
+        retdiv = NMF.solve!(NMF.SPA(obj=:div), X, W, H)
+        @test retdiv isa NMF.Result{T}
+        @test retdiv.converged
+        @test retdiv.objvalue ≈ NMF.gkldiv(X, W * H)
     end
     # Accepts any AbstractMatrix, not just a dense Matrix (e.g. a view).
     let T = Float64

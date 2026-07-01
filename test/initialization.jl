@@ -50,6 +50,5 @@
 
         W, H = NMF.nndsvd(X, 5; variant=:ar)
         @test all(W .> zero(T))
-        # NMF.printf_mat(W)
     end
 end

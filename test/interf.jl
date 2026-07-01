@@ -64,6 +64,11 @@ end
     W, H = NMF.randinit(X, k)
     NMF.alspgrad_updateh!(buf, X, W, H; maxiter=20, verbose=true)
     @test occursin("objv", String(take!(buf)))
+
+    # the W-update sub-routine writes its verbose trace to the same io
+    W, H = NMF.randinit(X, k)
+    NMF.alspgrad_updatew!(buf, X, W, H; maxiter=20, verbose=true)
+    @test occursin("objv", String(take!(buf)))
 end
 
 @testset "rng reproducibility" begin
@@ -145,6 +150,30 @@ end
             @test Base.ispublic(NMF, name)
         end
     end
+end
+
+@testset "nnmf argument validation" begin
+    Xg, Wg0, Hg0 = separable6x3()
+    p, k = size(Wg0)
+    n = size(Hg0, 2)
+    X = Float64.(Xg)
+
+    # Holding H fixed while starting from a non-custom initialization warns that
+    # the supplied factorization target is being ignored for H.
+    @test_logs (:warn, "Only W will be updated.") NMF.nnmf(X, k; alg=:multmse, init=:random, update_H=false, maxiter=10)
+
+    # Unknown init/alg symbols are rejected with an explanatory message.
+    @test_throws "Invalid value for init." NMF.nnmf(X, k; init=:bogus)
+    @test_throws "Invalid algorithm." NMF.nnmf(X, k; alg=:bogus, init=:random)
+
+    # The :spa algorithm is only valid with :spa initialization.
+    @test_throws "use :spa instead" NMF.nnmf(X, k; alg=:spa, init=:random)
+
+    # nmf_checksize rejects factor dimensions that are mutually inconsistent.
+    W = rand(p, k)
+    Hbad = rand(k + 1, n)
+    @test_throws DimensionMismatch NMF.solve!(NMF.MultUpdate{Float64}(), X, W, Hbad)
+    @test_throws "Dimensions of X, W, and H are inconsistent." NMF.solve!(NMF.MultUpdate{Float64}(), X, W, Hbad)
 end
 
 @testset "constructor argument validation" begin
