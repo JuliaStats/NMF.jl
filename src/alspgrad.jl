@@ -384,9 +384,11 @@ mutable struct ALSPGradUpd{T} <: NMFUpdater{T}
     tolg::T
 end
 
-solve!(alg::ALSPGrad, X, W, H; io::IO=stdout, rng::AbstractRNG=default_rng()) =
+function solve!(alg::ALSPGrad, X, W, H; io::IO=stdout, rng::AbstractRNG=default_rng())
+    Base.require_one_based_indexing(X, W, H)
     nmf_skeleton!(io, ALSPGradUpd(alg.update_H, alg.maxsubiter, alg.tolg),
                   X, W, H, alg.maxiter, alg.verbose, alg.tol)
+end
 
 
 struct ALSPGradUpd_State{T}

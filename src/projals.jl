@@ -33,9 +33,11 @@ struct ProjectedALS{T} <: AbstractNMFAlgorithm
     end
 end
 
-solve!(alg::ProjectedALS, X, W, H; io::IO=stdout, rng::AbstractRNG=default_rng()) =
+function solve!(alg::ProjectedALS, X, W, H; io::IO=stdout, rng::AbstractRNG=default_rng())
+    Base.require_one_based_indexing(X, W, H)
     nmf_skeleton!(io, ProjectedALSUpd(alg.update_H, alg.lambda_w, alg.lambda_h),
                   X, W, H, alg.maxiter, alg.verbose, alg.tol)
+end
 
 
 struct ProjectedALSUpd{T} <: NMFUpdater{T}

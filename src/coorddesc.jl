@@ -48,9 +48,11 @@ struct CoordinateDescent{T} <: AbstractNMFAlgorithm
 end
 
 
-solve!(alg::CoordinateDescent{T}, X, W, H; io::IO=stdout, rng::AbstractRNG=default_rng()) where {T} =
+function solve!(alg::CoordinateDescent{T}, X, W, H; io::IO=stdout, rng::AbstractRNG=default_rng()) where {T}
+    Base.require_one_based_indexing(X, W, H)
     nmf_skeleton!(io, CoordinateDescentUpd{T}(alg.α, alg.l₁ratio, alg.regularization, alg.shuffle, alg.update_H, rng),
                   X, W, H, alg.maxiter, alg.verbose, alg.tol)
+end
 
 
 struct CoordinateDescentUpd{T,R<:AbstractRNG} <: NMFUpdater{T}

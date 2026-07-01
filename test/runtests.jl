@@ -5,6 +5,7 @@ using LinearAlgebra
 using StatsBase
 using Aqua
 using ExplicitImports
+using OffsetArrays
 
 include("testproblems.jl")
 
@@ -30,6 +31,7 @@ println("Running tests:")
                               all_explicit_imports_are_public   = VERSION >= v"1.11",
                               all_qualified_accesses_are_public = VERSION >= v"1.11")
     end
+    include("genericaxes.jl")
     for t in tests
         tp = "$t.jl"
         include(tp)

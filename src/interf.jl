@@ -14,6 +14,11 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
               io::IO=stdout,
               rng::AbstractRNG=default_rng()) where T
 
+    # The factorization is built from dense linear algebra and returned as plain
+    # `Matrix`es, so offset axes cannot be honored; reject them rather than
+    # return a result whose axes silently disagree with the input.
+    Base.require_one_based_indexing(X)
+
     eltype(X) <: Number && all(t -> t >= zero(T), X) || throw(ArgumentError("The elements of X must be non-negative."))
 
     p, n = size(X)
@@ -27,6 +32,7 @@ function nnmf(X::AbstractMatrix{T}, k::Integer;
 
     if init == :custom
         W0 !== nothing && H0 !== nothing || throw(ArgumentError("To use :custom initialization, set W0 and H0."))
+        Base.require_one_based_indexing(W0, H0)
         eltype(W0) <: Number && all(t -> t >= zero(T), W0) || throw(ArgumentError("The elements of W0 must be non-negative."))
         p0, k0 = size(W0)
         p == p0 && k == k0 || throw(ArgumentError("Invalid size for W0."))

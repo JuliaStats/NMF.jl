@@ -17,6 +17,8 @@ end
 # initialization
 function spa(X::AbstractMatrix{T}, k::Integer; nnls_alg::Tuple{Symbol, Symbol}=(:pivot, :cache)) where T
 
+    Base.require_one_based_indexing(X)
+
     # Normalize data so that columns of X sum to one. An all-zero column has no
     # well-defined normalization (0/0), so reject it rather than propagate NaNs
     # into the anchor-selection argmax.
@@ -51,6 +53,7 @@ end
 
 # calculate statistics for result
 function solve!(alg::SPA, X, W, H; io::IO=stdout, rng::AbstractRNG=default_rng())
+    Base.require_one_based_indexing(X, W, H)
     T = eltype(W)
     if alg.obj == :mse
         objv = convert(T, 0.5) * sqL2dist(X, W*H)

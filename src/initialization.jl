@@ -13,6 +13,7 @@ function randinit(nrows::Integer, ncols::Integer, k::Integer, T::DataType;
 end
 
 function randinit(X, k::Integer; normalize::Bool=false, zeroh::Bool=false, rng::AbstractRNG=default_rng())
+    Base.require_one_based_indexing(X)
     p, n = size(X)
     randinit(p, n, k, eltype(X); normalize, zeroh, rng)
 end
@@ -88,6 +89,7 @@ end
 function nndsvd(X, k::Integer; zeroh::Bool=false, variant::Symbol=:std, initdata=nothing,
                 rng::AbstractRNG=default_rng())
 
+    Base.require_one_based_indexing(X)
     p, n = size(X)
     T = eltype(X)
     ivar = variant == :std ? 0 :
