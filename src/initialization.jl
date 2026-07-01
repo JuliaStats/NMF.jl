@@ -12,6 +12,29 @@ function randinit(nrows::Integer, ncols::Integer, k::Integer, T::DataType;
     return W, H
 end
 
+"""
+    randinit(X, k; normalize=false, zeroh=false, rng=default_rng()) -> (W, H)
+
+Randomly initialize the factors for a rank-`k` factorization of `X`. For `X` of
+size `(p, n)`, returns `W` of size `(p, k)` and `H` of size `(k, n)` filled with
+uniform random values.
+
+If `normalize=true`, each column of `W` is scaled to sum to one. If
+`zeroh=true`, `H` is returned as a zero matrix, appropriate for algorithms that
+need only `W` initialized (e.g. [`ProjectedALS`](@ref)). `rng` supplies the
+randomness.
+
+# Examples
+
+```jldoctest
+julia> X = rand(10, 7);
+
+julia> W, H = NMF.randinit(X, 3);
+
+julia> size(W), size(H)
+((10, 3), (3, 7))
+```
+"""
 function randinit(X, k::Integer; normalize::Bool=false, zeroh::Bool=false, rng::AbstractRNG=default_rng())
     Base.require_one_based_indexing(X)
     p, n = size(X)
@@ -86,6 +109,34 @@ function _rsvd(rng::AbstractRNG, X, k::Integer)
     return (Q * S.U)[:, 1:k], S.S[1:k], (S.Vt[1:k, :])'
 end
 
+"""
+    nndsvd(X, k; variant=:std, zeroh=false, initdata=nothing, rng=default_rng()) -> (W, H)
+
+Initialize the rank-`k` factors of `X` with Non-Negative Double Singular Value
+Decomposition (NNDSVD). For `X` of size `(p, n)`, returns `W` of size `(p, k)`
+and `H` of size `(k, n)`.
+
+`variant` selects the flavor: `:std` (standard, yields a sparse `W`), `:a`
+(NNDSVDa), or `:ar` (NNDSVDar, recommended for dense NMF). If `zeroh=true`, `H`
+is returned as a zero matrix, appropriate for algorithms that need only `W`
+initialized. By default the required SVD is computed with a randomized algorithm
+seeded by `rng`; pass a precomputed factorization as `initdata` (e.g.
+`initdata=svd(X)`) to use it instead.
+
+Reference: C. Boutsidis and E. Gallopoulos, "SVD based initialization: A head
+start for nonnegative matrix factorization," Pattern Recognition, 2008.
+
+# Examples
+
+```jldoctest
+julia> X = rand(10, 7);
+
+julia> W, H = NMF.nndsvd(X, 3; variant=:ar);
+
+julia> size(W), size(H)
+((10, 3), (3, 7))
+```
+"""
 function nndsvd(X, k::Integer; zeroh::Bool=false, variant::Symbol=:std, initdata=nothing,
                 rng::AbstractRNG=default_rng())
 

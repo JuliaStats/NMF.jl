@@ -7,6 +7,35 @@
 #  the 17th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, 
 #  pp. 1064–1072, 2011.
 
+"""
+    GreedyCD{T}(; maxiter=100, tol=cbrt(eps(T)), update_H=true,
+                lambda_w=zero(T), lambda_h=zero(T), verbose=false)
+
+Greedy coordinate-descent algorithm with variable selection (Hsieh & Dhillon).
+Both `W` and `H` must be initialized before [`solve!`](@ref).
+
+`lambda_w` and `lambda_h` are L1 regularization coefficients for `W` and `H`.
+`maxiter` bounds the iterations, `tol` is the convergence tolerance on the
+relative change of `W` and `H`, `update_H=false` holds `H` fixed, and
+`verbose=true` prints per-iteration progress.
+
+Reference: C.-J. Hsieh and I. S. Dhillon, "Fast coordinate descent methods with
+variable selection for non-negative matrix factorization," Proc. 17th ACM
+SIGKDD, 1064-1072, 2011.
+
+# Examples
+
+```jldoctest
+julia> X = rand(8, 6);
+
+julia> W, H = NMF.randinit(X, 3);
+
+julia> r = NMF.solve!(NMF.GreedyCD{Float64}(maxiter=50), X, W, H);
+
+julia> size(r.W), size(r.H)
+((8, 3), (3, 6))
+```
+"""
 struct GreedyCD{T} <: AbstractNMFAlgorithm
     maxiter::Int           # maximum number of iterations (in main procedure)
     verbose::Bool          # whether to show procedural information

@@ -12,6 +12,32 @@
 #  negative entries back to zeros.
 #
 
+"""
+    ProjectedALS{T}(; maxiter=100, tol=cbrt(eps(T)), update_H=true,
+                    lambda_w=cbrt(eps(T)), lambda_h=cbrt(eps(T)), verbose=false)
+
+Naive projected alternating least squares. Each iteration solves for `W` or `H`
+by unconstrained least squares and then clamps negative entries to zero. Only
+`W` needs to be initialized before [`solve!`](@ref).
+
+`lambda_w` and `lambda_h` are L2 regularization coefficients for `W` and `H`.
+`maxiter` bounds the iterations, `tol` is the convergence tolerance on the
+relative change of `W` and `H`, `update_H=false` holds `H` fixed, and
+`verbose=true` prints per-iteration progress.
+
+# Examples
+
+```jldoctest
+julia> X = rand(8, 6);
+
+julia> W, H = NMF.randinit(X, 3);
+
+julia> r = NMF.solve!(NMF.ProjectedALS{Float64}(maxiter=50), X, W, H);
+
+julia> size(r.W), size(r.H)
+((8, 3), (3, 6))
+```
+"""
 struct ProjectedALS{T} <: AbstractNMFAlgorithm
     maxiter::Int            # maximum number of iterations (in main procedure)
     verbose::Bool           # whether to show procedural information

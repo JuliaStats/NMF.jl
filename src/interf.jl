@@ -1,5 +1,46 @@
 # Interface function: nnmf
 
+"""
+    nnmf(X, k; init=:nndsvdar, alg=:greedycd, maxiter=100, tol=…, kwargs...) -> Result
+
+Factorize the non-negative matrix `X` into a product `W*H` of two non-negative
+matrices, where `W` has `k` columns and `H` has `k` rows, so that `W*H`
+approximates `X`. `X` is `p×n`, `W` is `p×k`, and `H` is `k×n`; `k` must not
+exceed `min(p, n)`. The factors are initialized and then optimized, and the
+[`Result`](@ref) is returned.
+
+# Keyword arguments
+- `init::Symbol=:nndsvdar`: initialization method, one of `:random`, `:nndsvd`,
+  `:nndsvda`, `:nndsvdar`, `:spa`, or `:custom` (supply `W0` and `H0`).
+- `initdata=nothing`: for the `:nndsvd` variants, a precomputed SVD of `X`
+  (e.g. `svd(X)`) to use in place of an internally computed randomized SVD.
+- `alg::Symbol=:greedycd`: factorization algorithm, one of `:multmse`,
+  `:multdiv`, `:projals`, `:alspgrad`, `:cd`, `:greedycd`, or `:spa`. Selecting
+  `:spa` requires `init=:spa`.
+- `maxiter::Integer=100`: maximum number of iterations.
+- `tol::Real=cbrt(eps(eltype(X))/100)`: convergence tolerance on the relative
+  change of `W` and `H`.
+- `replicates::Integer=1`: number of runs from independent random
+  initializations; the result with the smallest objective value is returned.
+- `W0`, `H0`: custom initial factors, required (and used) only when
+  `init=:custom`. They may be overwritten; pass copies to preserve them.
+- `update_H::Bool=true`: if `false`, hold `H` fixed and update only `W`.
+- `verbose::Bool=false`: whether to print per-iteration progress.
+- `io::IO=stdout`: stream for progress output when `verbose=true`.
+- `rng::AbstractRNG=default_rng()`: random number generator for initialization
+  and any randomized algorithm steps.
+
+# Examples
+
+```jldoctest
+julia> X = rand(8, 6);
+
+julia> r = nnmf(X, 3; alg=:multmse, maxiter=50, tol=1.0e-4);
+
+julia> size(r.W), size(r.H)
+((8, 3), (3, 6))
+```
+"""
 function nnmf(X::AbstractMatrix{T}, k::Integer;
               init::Symbol=:nndsvdar,
               initdata=nothing,

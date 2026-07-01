@@ -1,3 +1,14 @@
+"""
+NMF.jl provides algorithms and initializations for non-negative matrix
+factorization: approximating a non-negative matrix `X` of size `p×n` by a
+product `W*H`, where `W` is `p×k`, `H` is `k×n`, both are non-negative, and `k`
+is a chosen rank.
+
+The high-level entry point is [`nnmf`](@ref), which performs initialization and
+optimization in a single call. For finer control, initialize `W` and `H` with
+[`NMF.randinit`](@ref), [`NMF.nndsvd`](@ref), or [`NMF.spa`](@ref) and then run
+an algorithm in place with [`NMF.solve!`](@ref).
+"""
 module NMF
     using StatsBase: gkldiv, sqL2dist
     using Statistics: mean

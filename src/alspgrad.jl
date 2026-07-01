@@ -335,6 +335,36 @@ end
 
 ## main algorithm
 
+"""
+    ALSPGrad{T}(; maxiter=100, maxsubiter=200, tol=cbrt(eps(T)),
+                tolg=eps(T)^(1/4), update_H=true, verbose=false)
+
+Alternating least squares solved by projected gradient descent (Lin). Both `W`
+and `H` must be initialized before [`solve!`](@ref).
+
+Each outer iteration updates `W` and `H` by an inner projected-gradient solve.
+`maxiter` bounds the outer iterations and `maxsubiter` the inner ones; `tolg` is
+the gradient-norm tolerance (first-order optimality) for the inner solve. `tol`
+is the convergence tolerance on the relative change of `W` and `H`,
+`update_H=false` holds `H` fixed, and `verbose=true` prints per-iteration
+progress.
+
+Reference: C.-J. Lin, "Projected Gradient Methods for Non-negative Matrix
+Factorization," Neural Computation, 19(10):2756-2779, 2007.
+
+# Examples
+
+```jldoctest
+julia> X = rand(8, 6);
+
+julia> W, H = NMF.randinit(X, 3);
+
+julia> r = NMF.solve!(NMF.ALSPGrad{Float64}(maxiter=50, tolg=1.0e-6), X, W, H);
+
+julia> size(r.W), size(r.H)
+((8, 3), (3, 6))
+```
+"""
 struct ALSPGrad{T} <: AbstractNMFAlgorithm
     maxiter::Int      # maximum number of main iterations
     maxsubiter::Int   # maximum number of iterations within a sub-routine

@@ -4,6 +4,7 @@ using Random
 using LinearAlgebra
 using StatsBase
 using Aqua
+using Documenter
 using ExplicitImports
 using OffsetArrays
 
@@ -22,6 +23,10 @@ println("Running tests:")
 @testset "All tests" begin
     @testset "Aqua" begin
         Aqua.test_all(NMF)
+    end
+    @testset "Doctests" begin
+        DocMeta.setdocmeta!(NMF, :DocTestSetup, :(using NMF); recursive=true)
+        doctest(NMF; manual=false)
     end
     @testset "ExplicitImports" begin
         # The public-ness checks rely on `Base.ispublic`, available only on

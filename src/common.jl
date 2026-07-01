@@ -22,13 +22,84 @@ end
     AbstractNMFAlgorithm
 
 Supertype for NMF algorithm specifications. Each concrete subtype bundles the
-options for one factorization algorithm; an instance is run with `solve!`.
+options for one factorization algorithm; construct an instance of a concrete
+subtype and run it with [`solve!`](@ref).
+
+Concrete subtypes: [`MultUpdate`](@ref), [`ProjectedALS`](@ref),
+[`ALSPGrad`](@ref), [`CoordinateDescent`](@ref), [`GreedyCD`](@ref), and
+[`SPA`](@ref).
+
+# Examples
+
+```jldoctest
+julia> X = rand(8, 6);
+
+julia> W, H = NMF.randinit(X, 3);
+
+julia> r = NMF.solve!(NMF.GreedyCD{Float64}(maxiter=100), X, W, H);
+
+julia> size(r.W), size(r.H)
+((8, 3), (3, 6))
+```
 """
 abstract type AbstractNMFAlgorithm end
+
+"""
+    solve!(alg::AbstractNMFAlgorithm, X, W, H; io=stdout, rng=default_rng()) -> Result
+
+Factorize `X ≈ W*H` using algorithm `alg`, updating `W` and `H` in place and
+returning a [`Result`](@ref).
+
+`W` and `H` must be preallocated to sizes `(p, k)` and `(k, n)`, where `X` is
+`p×n` and `k` is the rank, and must already be initialized (see
+[`randinit`](@ref), [`nndsvd`](@ref), and [`spa`](@ref)). Some algorithms
+require both `W` and `H` to be initialized (e.g. [`MultUpdate`](@ref)); others
+need only `W` (e.g. [`ProjectedALS`](@ref)). Progress is written to `io` when
+`alg` is constructed with `verbose=true`, and `rng` supplies any randomness the
+algorithm uses.
+
+# Examples
+
+```jldoctest
+julia> X = rand(8, 6);
+
+julia> W, H = NMF.randinit(X, 3);
+
+julia> r = NMF.solve!(NMF.MultUpdate{Float64}(maxiter=50), X, W, H);
+
+julia> size(r.W), size(r.H)
+((8, 3), (3, 6))
+```
+"""
+function solve! end
 
 
 # the result type
 
+"""
+    Result{T}
+
+The value returned by [`nnmf`](@ref) and [`solve!`](@ref), holding a
+factorization `X ≈ W*H` together with metadata about the run.
+
+# Fields
+- `W::Matrix{T}`: the `p×k` left factor.
+- `H::Matrix{T}`: the `k×n` right factor.
+- `niters::Int`: number of iterations performed.
+- `converged::Bool`: whether the algorithm reached its convergence tolerance.
+- `objvalue::T`: objective value at the final iteration.
+
+# Examples
+
+```jldoctest
+julia> X = rand(8, 6);
+
+julia> r = nnmf(X, 3);
+
+julia> size(r.W), size(r.H)
+((8, 3), (3, 6))
+```
+"""
 struct Result{T}
     W::Matrix{T}
     H::Matrix{T}

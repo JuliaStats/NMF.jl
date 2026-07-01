@@ -21,6 +21,39 @@
 #  computer sciences 92.3: 708-721, 2009.
 
 
+"""
+    CoordinateDescent{T}(; maxiter=100, tol=cbrt(eps(T)), update_H=true,
+                         α=zero(T), l₁ratio=zero(T), regularization=:both,
+                         shuffle=false, verbose=false)
+
+Coordinate-descent solver using Fast Hierarchical Alternating Least Squares
+(Cichocki & Phan), following the scikit-learn implementation.
+
+`α` scales the regularization terms and `l₁ratio ∈ [0, 1]` mixes the L1 and L2
+penalties. `regularization` selects what the penalty applies to: `:components`
+(`H`), `:transformation` (`W`), `:both`, or `:none`. Set `shuffle=true` to
+randomize the coordinate order on each sweep. `maxiter` bounds the iterations,
+`tol` is the convergence tolerance on the relative change of `W` and `H`,
+`update_H=false` holds `H` fixed, and `verbose=true` prints per-iteration
+progress.
+
+Reference: A. Cichocki and A.-H. Phan, "Fast local algorithms for large scale
+nonnegative matrix and tensor factorizations," IEICE Transactions on
+Fundamentals, 92-A(3):708-721, 2009.
+
+# Examples
+
+```jldoctest
+julia> X = rand(8, 6);
+
+julia> W, H = NMF.randinit(X, 3);
+
+julia> r = NMF.solve!(NMF.CoordinateDescent{Float64}(maxiter=50, α=0.5, l₁ratio=0.5), X, W, H);
+
+julia> size(r.W), size(r.H)
+((8, 3), (3, 6))
+```
+"""
 struct CoordinateDescent{T} <: AbstractNMFAlgorithm
     maxiter::Int           # maximum number of iterations (in main procedure)
     verbose::Bool          # whether to show procedural information
